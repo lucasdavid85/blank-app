@@ -1,0 +1,42 @@
+const mapEl=el('map'), mapc=el('mapc'), xctx=mapc.getContext('2d');
+let mapOpen=false, mapScale=1, zoom=1, center=[0,0], selection=null, gesture=null;
+const history=[];
+const mode=()=>el('edit-layer').value;
+const ring=()=>selection?.kind==='building'?world.buildings[selection.i].poly:selection?.kind==='water'?world.water[selection.i]:selection?.kind==='path'?world.paths[selection.i]:world.line;
+function checkpoint(){history.push(exportFeatures());if(history.length>40)history.shift();}
+function toggleMap(){mapOpen=!mapOpen;mapEl.classList.toggle('on',mapOpen);keys.clear();if(mapOpen)resizeMap();else rebuildAll();}
+function resizeMap(){const s=Math.max(180,Math.min(innerWidth-32,innerHeight-330,900));mapc.width=mapc.height=Math.round(s);drawMap();}
+function screen([x,y]){return[mapc.width/2+(x-center[0])*mapScale,mapc.height/2-(y-center[1])*mapScale];}
+function mapPick(e){const r=mapc.getBoundingClientRect();return[center[0]+((e.clientX-r.left)*mapc.width/r.width-mapc.width/2)/mapScale,center[1]-((e.clientY-r.top)*mapc.height/r.height-mapc.height/2)/mapScale];}
+function drawMap(){
+ const S=mapc.width;mapScale=(S-12)/(2*HALF)*zoom;xctx.setTransform(1,0,0,1,0,0);xctx.fillStyle='#101a20';xctx.fillRect(0,0,S,S);
+ xctx.setTransform(mapScale,0,0,-mapScale,S/2-center[0]*mapScale,S/2+center[1]*mapScale);
+ const px=1/mapScale;xctx.fillStyle='#263e35';for(const p of world.ground){path(xctx,p,true);xctx.fill();}
+ xctx.strokeStyle='#344a46';xctx.lineWidth=px;for(let v=-HALF;v<=HALF;v+=10){xctx.beginPath();xctx.moveTo(v,-HALF);xctx.lineTo(v,HALF);xctx.moveTo(-HALF,v);xctx.lineTo(HALF,v);xctx.stroke();}
+ xctx.fillStyle='#388caf';for(const p of world.water){path(xctx,p,true);for(const h of p.holes||[]){xctx.moveTo(...h[0]);h.slice(1).forEach(q=>xctx.lineTo(...q));xctx.closePath();}xctx.fill('evenodd');}
+ xctx.strokeStyle='#adaf9f';xctx.lineJoin=xctx.lineCap='round';for(const p of world.paths){path(xctx,p);xctx.lineWidth=p.width||2;xctx.stroke();}
+ for(const b of world.buildings){xctx.fillStyle=b.landmark?'#d7b777':'#d0d6d9';path(xctx,b.poly,true);for(const h of b.holes||[]){xctx.moveTo(...h[0]);for(const q of h.slice(1))xctx.lineTo(...q);xctx.closePath();}xctx.fill('evenodd');}
+ xctx.strokeStyle='#f0b942';xctx.lineWidth=2*px;path(xctx,world.line);xctx.stroke();
+ if(selection||mode()==='track'){const p=ring();xctx.strokeStyle='#fff';xctx.lineWidth=2*px;path(xctx,p);xctx.stroke();xctx.fillStyle='#f5bd48';for(const q of p){xctx.beginPath();xctx.arc(...q,4*px,0,Math.PI*2);xctx.fill();}}
+ xctx.setTransform(1,0,0,1,0,0);xctx.font='14px Segoe UI';xctx.fillStyle='#eef6fa';xctx.textAlign='left';xctx.fillText('N ↑',16,24);
+ if(el('map-references').checked){for(const ref of CAMPUS_REFERENCE.points){const q=screen(toLocal(...ref.coordinates));if(q[0]<0||q[0]>S||q[1]<0||q[1]>S)continue;xctx.fillStyle=ref.matched?'#74e8d0':'#ff9c75';xctx.beginPath();xctx.arc(q[0],q[1],5,0,Math.PI*2);xctx.fill();xctx.fillText(ref.title+(ref.matched?'':' · reference only'),q[0]+8,q[1]-8);}}
+ const meters=zoom>5?10:zoom>2?25:100;xctx.fillRect(16,S-28,meters*mapScale,3);xctx.fillText(meters+' m',16,S-36);
+ if(zoom>1.5)for(const b of world.buildings){if(!b.name)continue;const q=screen(b.poly[0]);if(q[0]>0&&q[0]<S&&q[1]>0&&q[1]<S){xctx.fillStyle='#fff';xctx.fillText(b.name,q[0],q[1]);}}
+}
+function closestSegment(p,q){let best={d:Infinity,i:0,q};for(let i=0;i<p.length-1;i++){const a=p[i],b=p[i+1],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy||1)));const c=[a[0]+t*dx,a[1]+t*dy],d=Math.hypot(c[0]-q[0],c[1]-q[1]);if(d<best.d)best={d,i,q:c};}return best;}
+function snapped(q){if(!el('snap-paths').checked||mode()!=='track')return q;let best={d:Infinity};for(const p of world.paths){if(p.properties?.highway==='steps')continue;const n=closestSegment(p,q);if(n.d<best.d)best=n;}return best.d<8?best.q:q;}
+function selectAt(q){const kind=mode();let i=-1;if(kind==='building')i=world.buildings.findIndex(b=>pointInPoly(...q,b.poly));if(kind==='water')i=world.water.findIndex(p=>pointInPoly(...q,p));if(kind==='path'){let d=10/mapScale;world.paths.forEach((p,k)=>{const n=closestSegment(p,q);if(n.d<d){d=n.d;i=k;}});}selection=i<0?null:{kind,i};showSelection();}
+function showSelection(){el('feature-fields').hidden=!selection;if(!selection){el('feature-info').textContent=mode()==='track'?'Edit the racing line. Snapping finds paths within 8 m.':'Select a feature to edit its outline.';return;}const b=selection.kind==='building'?world.buildings[selection.i]:null,p=ring();el('feature-name').value=b?.name||p.properties?.name||'';el('feature-note').value=b?.properties.annotation||p.properties?.annotation||'';el('feature-size').value=b?b.height:selection.kind==='path'?p.width:(p.elevation??waterLevel(p)).toFixed(2);el('size-label').textContent=b?'Height in m':selection.kind==='path'?'Width in m':'Water altitude in m';el('feature-info').textContent=b?(b.heightSource+' · '+(b.properties.positionCheck||'Position not checked against a campus marker')+(b.passageAssumed?' · Passage clearance assumed in draft':'')):selection.kind==='water'?'Mapped shoreline · estimated water altitude':'Mapped centreline · width estimated unless specified';}
+mapc.addEventListener('pointerdown',e=>{mapc.setPointerCapture(e.pointerId);const q=mapPick(e);if(e.button===1||e.button===2){gesture={pan:q};return;}if(mode()!=='track'&&!selection)selectAt(q);let p=ring(),hit=p.findIndex(v=>Math.hypot(v[0]-q[0],v[1]-q[1])<8/mapScale);if(hit<0&&!e.shiftKey&&mode()!=='track'){selectAt(q);p=ring();hit=-1;}if(mode()!=='track'&&!selection){drawMap();return;}const closed=mode()!=='path';if(e.altKey&&hit>=0&&p.length>(closed?4:2)){checkpoint();if(closed&&hit===p.length-1)hit=0;p.splice(hit,1);if(closed)p[p.length-1]=[...p[0]];measureLine();drawMap();return;}if(e.shiftKey){const n=closestSegment(p,q);checkpoint();p.splice(n.i+1,0,snapped(q));measureLine();drawMap();return;}if(hit>=0){checkpoint();gesture={hit};}drawMap();});
+mapc.addEventListener('pointermove',e=>{const q=mapPick(e),ll=toLonLat(...q);el('coordinates').textContent=ll[1].toFixed(7)+'° N · '+ll[0].toFixed(7)+'° E';if(!gesture)return;if(gesture.pan){center=[center[0]+gesture.pan[0]-q[0],center[1]+gesture.pan[1]-q[1]];drawMap();return;}const p=ring(),i=gesture.hit;p[i]=snapped(q);if(mode()!=='path'){if(i===0)p[p.length-1]=[...p[0]];if(i===p.length-1)p[0]=[...p[i]];}measureLine();drawMap();});
+mapc.addEventListener('pointerup',()=>{gesture=null;});mapc.addEventListener('pointercancel',()=>{gesture=null;});mapc.addEventListener('contextmenu',e=>e.preventDefault());
+mapc.addEventListener('wheel',e=>{e.preventDefault();const before=mapPick(e);zoom=Math.max(1,Math.min(20,zoom*Math.exp(-e.deltaY*.0015)));mapScale=(mapc.width-12)/(2*HALF)*zoom;const after=mapPick(e);center[0]+=before[0]-after[0];center[1]+=before[1]-after[1];drawMap();},{passive:false});
+el('edit-layer').onchange=()=>{selection=null;showSelection();drawMap();};
+el('map-undo').onclick=()=>{if(history.length){ingest(history.pop());selection=null;showSelection();drawMap();}};
+el('map-fit').onclick=()=>{zoom=1;center=[0,0];drawMap();};
+el('feature-apply').onclick=()=>{if(!selection)return;const v=Number(el('feature-size').value);if(!Number.isFinite(v)||(selection.kind!=='water'&&(v<=0||v>100)))return;checkpoint();const p=ring();if(selection.kind==='building'){const b=world.buildings[selection.i];b.name=el('feature-name').value;if(b.height!==v)b.heightSource='Manual measurement';b.height=v;b.properties.nameSource='Manual annotation';b.properties.annotation=el('feature-note').value;}else{p.properties={...p.properties,name:el('feature-name').value,annotation:el('feature-note').value};if(selection.kind==='path')p.width=v;else p.elevation=v;}showSelection();drawMap();};
+function focusFeature(kind,i){if(i<0)return;selection={kind,i};el('edit-layer').value=kind;const p=ring();center=p.reduce((a,q)=>[a[0]+q[0]/p.length,a[1]+q[1]/p.length],[0,0]);zoom=5;showSelection();drawMap();}
+el('focus-castle').onclick=()=>focusFeature('building',world.buildings.findIndex(b=>/grand ch/i.test(b.name)));
+el('focus-lake').onclick=()=>{let best=-1,area=0;world.water.forEach((p,i)=>{if(!world.ground.some(g=>pointInPoly(...p[0],g)))return;const a=Math.abs(p.reduce((s,q,j)=>{const r=p[(j+1)%p.length];return s+q[0]*r[1]-r[0]*q[1];},0));if(a>area){area=a;best=i;}});focusFeature('water',best);};
+el('map-close').onclick=toggleMap;el('map-export').onclick=()=>download(exportFeatures(),'valrose-campus.geojson');
+addEventListener('resize',()=>{if(mapOpen)resizeMap();});

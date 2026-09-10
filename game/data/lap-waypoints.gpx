@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="https://gpx.studio" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/PowerExtension/v1 http://www.garmin.com/xmlschemas/PowerExtensionv1.xsd http://www.topografix.com/GPX/gpx_style/0/2 http://www.topografix.com/GPX/gpx_style/0/2/gpx_style.xsd" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1" xmlns:gpx_style="http://www.topografix.com/GPX/gpx_style/0/2">
+  <metadata>
+    <name>New file 1</name>
+    <author>
+      <name>gpx.studio</name>
+      <link href="https://gpx.studio"/>
+    </author>
+  </metadata>
+  <wpt lat="43.715766" lon="7.265778">
+    <ele>36.545255995319906</ele>
+    <name>start</name>
+  </wpt>
+  <wpt lat="43.716365" lon="7.267643">
+    <ele>45.22626035365262</ele>
+    <name>2</name>
+  </wpt>
+  <wpt lat="43.71599" lon="7.267434">
+    <ele>46.6036982447227</ele>
+    <name>3</name>
+  </wpt>
+  <wpt lat="43.715746" lon="7.267871">
+    <ele>52.262800831679556</ele>
+    <name>4</name>
+  </wpt>
+  <wpt lat="43.716371" lon="7.268371">
+    <ele>57.78898976237762</ele>
+    <name>5</name>
+  </wpt>
+  <wpt lat="43.717733" lon="7.269245">
+    <ele>60.467049550248774</ele>
+    <name>6</name>
+  </wpt>
+  <wpt lat="43.717864" lon="7.26859">
+    <ele>53.20554448099465</ele>
+    <name>7</name>
+  </wpt>
+  <wpt lat="43.717285" lon="7.267789">
+    <ele>48.79011873624845</ele>
+    <name>8</name>
+  </wpt>
+  <wpt lat="43.716739" lon="7.266815">
+    <ele>48.20493785057126</ele>
+    <name>9</name>
+  </wpt>
+  <wpt lat="43.717003" lon="7.266333">
+    <ele>57.98065365699298</ele>
+    <name>10</name>
+  </wpt>
+  <wpt lat="43.717996" lon="7.266742">
+    <ele>59.55976664839072</ele>
+    <name>11</name>
+  </wpt>
+  <wpt lat="43.717062" lon="7.265832">
+    <ele>48.38130074841125</ele>
+    <name>12</name>
+  </wpt>
+  <wpt lat="43.715996" lon="7.265832">
+    <ele>37.099671968309565</ele>
+    <name>13 starting again</name>
+  </wpt>
+  <trk>
+    <name>New file 1</name>
+    <trkseg>
+      <trkpt lat="43.715752869758006" lon="7.2657140778841836"/>
+    </trkseg>
+  </trk>
+</gpx>
