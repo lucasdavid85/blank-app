@@ -16,7 +16,7 @@ python -m venv .venv
 
 Open the local address printed by Streamlit. On macOS or Linux, use `.venv/bin/python` for the last two commands.
 
-Click inside the game before driving. Use arrow keys or WASD, Space for the handbrake, R to reset, C for the camera, and M for the map. Choose Race or Visit from the Mode menu. Phones and tablets automatically show multi-touch driving controls and use a full-height game view. The settings panel also links to an external 360° campus tour for visual reference. Use Save data pack to preserve edits before reloading.
+Click inside the game before driving. Use arrow keys or WASD, Space for the handbrake, R to reset, C for the camera, and M for the map. Choose Race or Visit from the Mode menu. Phones and tablets automatically use a full-height game view with two-thumb controls: steering on the left, handbrake in the centre, and accelerator and brake pedals on the right. The settings panel opens as a compact + button and also links to an external 360° campus tour for visual reference. Use Save data pack to preserve edits before reloading.
 
 ## Performance
 
@@ -28,7 +28,7 @@ Zero latency is not possible: frame rate, GPU load, display refresh and input de
 
 ## Implementation and checks
 
-Streamlit 1.63.0 is pinned. The app uses its public st.iframe API. Local scripts are inlined into a cached HTML frame; no additional game server, custom component protocol or CDN is needed. Restart Streamlit after editing game source files to clear the cached HTML.
+Streamlit 1.63.0 is pinned. The app uses its public st.iframe API. Local scripts are inlined into a fresh HTML frame when the page loads, so deployed JavaScript and CSS changes cannot be hidden by a stale Streamlit data cache. No additional game server, custom component protocol or CDN is needed.
 
 The Python startup test passed with one game iframe and no app exceptions. Browser checks confirmed the campus loads, both modes are available, visit destinations work and graphics settings switch without console errors. The existing Node game checks passed for race and visit behavior, gate collision, campus geometry, lake island, terrain and editing round trips. A stationary browser observation showed about 60 FPS; this is not a moving gameplay benchmark.
 

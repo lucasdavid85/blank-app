@@ -7,6 +7,8 @@ function element(id){if(!elements.has(id))elements.set(id,{tagName:'DIV',value:i
 const ctx=vm.createContext({THREE,document:{body:element('body'),getElementById:element,createElement:()=>element('temp')},navigator:{maxTouchPoints:2},addEventListener:noop,innerWidth:1200,innerHeight:900,performance:{now:()=>0},console,URL,Blob,setTimeout,Float32Array,requestAnimationFrame:noop});
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 if(!/class="btn external" target="_blank" rel="noopener noreferrer" href="https:\/\/www\.vip-studio360\.fr\//.test(html))throw Error('Safe 360 campus tour link missing');
+if(!/<div id="panel" class="min">/.test(html))throw Error('Settings panel is not collapsed by default');
+if(!/id="touch-steer"[\s\S]*id="touch-center"[\s\S]*id="touch-pedals"/.test(html))throw Error('Two-thumb mobile layout missing');
 for(const m of html.matchAll(/<script src="(src\/[^"]+)"/g)){if(m[1].includes('11-boot'))continue;vm.runInContext(fs.readFileSync(path.join(root,m[1]),'utf8'),ctx,{filename:m[1]});}
 vm.runInContext(`
 loadDefaultTerrain();ingest(CAMPUS);

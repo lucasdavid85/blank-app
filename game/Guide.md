@@ -8,7 +8,7 @@ Race uses the circuit supplied in your draft. Acceleration is boosted on the sho
 
 Visit offers free driving without a programmed speed limit, including away from the circuit. Engine power and drag still affect acceleration. Choose a destination to see its introduction, direct distance and blue map marker. Approach it to record a discovery. The distance is a straight line, not route guidance. Buildings and water still block the car. The race timer and racing surface are hidden in this mode.
 
-Drive with the arrow keys or WASD. Space applies the handbrake. C changes camera. M opens the map editor. Phones and tablets automatically display multi-touch controls; the settings panel starts collapsed to leave room for driving.
+Drive with the arrow keys or WASD. Space applies the handbrake. C changes camera. M opens the map editor. Phones and tablets automatically display two-thumb controls, with steering on the left and accelerator and brake pedals on the right. The settings panel starts as a compact + button on every device to leave room for driving.
 
 ## Geographic corrections
 

@@ -34,8 +34,9 @@ st.markdown(
 )
 
 # Bundle local scripts into the frame so there are no asset server round trips.
-# This app has no Python widgets: gameplay never triggers a Streamlit rerun.
-@st.cache_data(show_spinner=False)
+# Do not cache this function: Streamlit does not track the JS/CSS files read
+# inside it, so a hot deployment could otherwise keep serving an old game.
+# The app has no Python widgets, therefore this work only happens on page load.
 def game_html():
     folder = ROOT / "game"
     html = (folder / "index.html").read_text(encoding="utf-8")

@@ -42,7 +42,7 @@ addEventListener("keydown", e => {
   if (k === "r") resetKart();
   if (k === "c") camMode = (camMode + 1) % 3;
   if (k === "m") toggleMap();
-  if (k === "h") document.getElementById("panel").classList.toggle("min");
+  if (k === "h") setPanelCollapsed(!document.getElementById("panel").classList.contains("min"));
   keys.add(k);
 });
 addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));

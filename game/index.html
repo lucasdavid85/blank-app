@@ -33,6 +33,7 @@
        "desktop" or "tiny". vmin tracks whichever side is tighter, which is
        what matters for controls — the short side in either orientation. */
     --pad-btn: clamp(46px, 12vmin, 64px);
+    --pedal-btn: clamp(58px, 15vmin, 82px);
     --pad-gap: clamp(6px, 2vmin, 8px);
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -81,8 +82,9 @@
   #hidepanel{position:absolute;top:9px;right:11px;width:auto;background:none;border:0;
     padding:0;margin:0;opacity:.5;font-size:15px;cursor:pointer;color:inherit}
   #panel.min .body{display:none}
-  body.touch #panel.min{width:auto;max-width:calc(100vw - 20px);padding:10px 38px 10px 11px}
-  body.touch #panel.min h1{font-size:13px;margin:0;white-space:nowrap}
+  #panel.min{width:44px;height:44px;padding:0;overflow:hidden;border-radius:50%}
+  #panel.min h1{display:none}
+  #panel.min #hidepanel{position:static;width:100%;height:100%;padding:0;opacity:.9;font-size:22px;text-align:center}
 
   #map{position:fixed;z-index:40;inset:0;background:rgba(8,14,11,.93);display:none;
     align-items:center;justify-content:center;flex-direction:column;gap:14px}
@@ -94,32 +96,30 @@
 #map{gap:8px;overflow:auto;padding:12px} #precision-toolbar,#feature-fields{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap} #feature-fields[hidden]{display:none} #precision-toolbar .btn,#feature-fields .btn{width:auto;margin:0} select,input{font:inherit;color:#f4f5f3;background:#22342e;border:1px solid #738179;padding:5px;border-radius:3px} #feature-size{width:85px} #feature-name{width:230px} #precision-toolbar,#feature-info,#coordinates,#feature-fields,#maphelp{font-size:14px} #mapc{touch-action:none} #coordinates{font-family:monospace} #panel{font-size:14px;max-height:calc(100vh - 36px);overflow:auto} .reference{display:block;color:#b6d6ee;font-size:12px;margin-top:7px}
 #discovery{position:fixed;z-index:20;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));width:min(230px,calc(100vw - 20px));font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}
 
-  /* Touch controls — on-screen driving pad for phones/tablets. Hidden on
-     mouse/trackpad devices; shown whenever the primary pointer is coarse or
-     the device reports touch points (14-touch.js sets body.touch), so the
-     kart stays drivable with no keyboard — phone or iPad alike. Every size
-     below is fluid (var(--pad-btn) etc., defined in :root), so the pad
-     scales continuously with the screen instead of jumping at one cutoff. */
-  #mobile-dock{position:fixed;right:max(clamp(10px,4vw,16px),env(safe-area-inset-right));bottom:max(clamp(10px,4vw,16px),env(safe-area-inset-bottom));
-    z-index:25;display:flex;flex-direction:column;align-items:flex-end;
-    gap:clamp(8px,2vmin,10px);pointer-events:none}
-  #mobile-dock #readout{position:static}
-  #touch-extra,#touch-pad{display:none;pointer-events:auto}
-  body.touch #touch-extra{display:flex;gap:var(--pad-gap)}
-  body.touch #touch-pad{display:grid;grid-template-columns:repeat(3,var(--pad-btn));
-    grid-template-rows:repeat(3,var(--pad-btn));gap:var(--pad-gap)}
-  .tbtn{width:var(--pad-btn);height:var(--pad-btn);border-radius:14px;border:1px solid rgba(243,239,228,.35);
-    background:rgba(15,24,19,.75);color:var(--paper);font-size:clamp(18px,5vmin,24px);line-height:1;
-    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
-    -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
-  .tbtn:active,.tbtn.on{background:rgba(228,178,74,.5);border-color:rgba(228,178,74,.7)}
-  .tbtn.pill{width:auto;height:clamp(34px,9vmin,38px);border-radius:19px;padding:0 14px;
-    font-size:clamp(12px,3vmin,13px);gap:6px}
-  #t-up{grid-column:2;grid-row:1}
-  #t-left{grid-column:1;grid-row:2}
-  #t-hand{grid-column:2;grid-row:2;border-radius:50%;font-size:clamp(14px,4vmin,16px)}
-  #t-right{grid-column:3;grid-row:2}
-  #t-down{grid-column:2;grid-row:3}
+  /* Two-thumb touch layout inspired by an arcade racing HUD: steering stays
+     under the left thumb, pedals under the right, and utility buttons sit in
+     the middle. Fluid sizing covers phones, phablets and iPads. */
+  #mobile-dock{position:fixed;inset:0;z-index:25;pointer-events:none}
+  #mobile-dock #readout{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));text-align:right}
+  body.touch #mobile-dock #readout{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pedal-btn) + var(--pedal-btn) + var(--pad-gap) + 8px)}
+  #touch-pad{display:none}
+  body.touch #touch-pad{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none}
+  .touch-cluster,#touch-center,#touch-extra{display:flex;align-items:flex-end;gap:var(--pad-gap);pointer-events:auto}
+  #touch-center{flex-direction:column;align-items:center}
+  #touch-extra{gap:var(--pad-gap)}
+  #touch-pedals{flex-direction:column-reverse}
+  .tbtn{width:var(--pad-btn);height:var(--pad-btn);border-radius:50%;border:2px solid rgba(81,238,225,.82);
+    background:radial-gradient(circle at 50% 35%,rgba(43,91,91,.8),rgba(8,37,41,.82));color:#eafffb;
+    box-shadow:0 0 0 3px rgba(24,185,190,.2),inset 0 0 12px rgba(55,235,223,.18),0 0 15px rgba(39,222,215,.38);
+    font-size:clamp(20px,5vmin,28px);line-height:1;display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(5px);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
+  .tbtn:active,.tbtn.on{background:radial-gradient(circle,rgba(238,195,75,.72),rgba(98,67,16,.88));border-color:#ffe27c;box-shadow:0 0 18px rgba(255,220,91,.8)}
+  .tbtn.utility{width:clamp(38px,9vmin,48px);height:clamp(38px,9vmin,48px);font-size:clamp(16px,4vmin,20px)}
+  .tbtn.pedal{height:var(--pedal-btn);border-radius:999px;flex-direction:column;gap:4px;font-size:clamp(17px,4.5vmin,24px)}
+  .tbtn.pedal span{font:700 clamp(8px,2vmin,10px)/1 system-ui,sans-serif;letter-spacing:.08em}
+  #t-hand{width:clamp(44px,10vmin,54px);height:clamp(44px,10vmin,54px);font-size:clamp(17px,4vmin,21px)}
+  body.touch #mini{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-btn) + 24px)}
+  body.touch #discovery{top:max(76px,calc(env(safe-area-inset-top) + 60px));bottom:auto;max-height:46vh;overflow:auto}
   body.map-open #mobile-dock{display:none}
   #rotate-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30;
     background:rgba(15,24,19,.85);border:1px solid rgba(243,239,228,.25);border-radius:20px;
@@ -132,11 +132,9 @@
     body.touch #best,body.touch #lap{font-size:11px}
   }
   @media(max-height:520px) and (orientation:landscape){
-    :root{--pad-btn:clamp(42px,11vmin,52px);--pad-gap:5px}
-    body.touch #mobile-dock{flex-direction:row;align-items:flex-end}
-    body.touch #touch-extra{flex-direction:column}
-    body.touch .tbtn.pill{width:var(--pad-btn);height:34px;padding:0;font-size:18px}
-    body.touch .tbtn.pill .pill-label{display:none}
+    :root{--pad-btn:clamp(42px,11vmin,52px);--pedal-btn:clamp(52px,14vmin,64px);--pad-gap:5px}
+    body.touch #mini{width:92px;height:92px;bottom:calc(max(10px,env(safe-area-inset-bottom)) + var(--pad-btn) + 18px)}
+    body.touch #mobile-dock #readout{bottom:calc(max(10px,env(safe-area-inset-bottom)) + var(--pedal-btn) + var(--pedal-btn) + 8px)}
   }
   </style>
 </head>
@@ -158,21 +156,27 @@
     <div id="grade">0.0 %</div>
     <div id="alt">— m</div>
   </div>
-  <div id="touch-extra">
-    <button class="tbtn pill" id="t-reset" type="button" aria-label="Reset kart"><span aria-hidden="true">⟲</span><span class="pill-label">Reset</span></button>
-    <button class="tbtn pill" id="t-camera" type="button" aria-label="Change camera"><span aria-hidden="true">📷</span><span class="pill-label">Camera</span></button>
-  </div>
   <div id="touch-pad">
-    <button class="tbtn" id="t-up" type="button" aria-label="Accelerate">▲</button>
-    <button class="tbtn" id="t-left" type="button" aria-label="Steer left">◀</button>
-    <button class="tbtn" id="t-hand" type="button" aria-label="Handbrake">✋</button>
-    <button class="tbtn" id="t-right" type="button" aria-label="Steer right">▶</button>
-    <button class="tbtn" id="t-down" type="button" aria-label="Brake or reverse">▼</button>
+    <div class="touch-cluster" id="touch-steer" aria-label="Steering controls">
+      <button class="tbtn" id="t-left" type="button" aria-label="Steer left">◀</button>
+      <button class="tbtn" id="t-right" type="button" aria-label="Steer right">▶</button>
+    </div>
+    <div id="touch-center">
+      <button class="tbtn" id="t-hand" type="button" aria-label="Handbrake">✋</button>
+      <div id="touch-extra">
+        <button class="tbtn utility" id="t-reset" type="button" aria-label="Reset kart">⟲</button>
+        <button class="tbtn utility" id="t-camera" type="button" aria-label="Change camera">📷</button>
+      </div>
+    </div>
+    <div class="touch-cluster" id="touch-pedals" aria-label="Pedal controls">
+      <button class="tbtn pedal" id="t-down" type="button" aria-label="Brake or reverse">▼<span>BRAKE</span></button>
+      <button class="tbtn pedal" id="t-up" type="button" aria-label="Accelerate">▲<span>GAS</span></button>
+    </div>
   </div>
 </div>
 
-<aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">University Library</option><option value="2">University Restaurant</option><option value="3">Montebello Residence</option><option value="4">Petit Château</option><option value="5">Chemistry · ICN</option><option value="6">Sports Center</option><option value="7">Park Lake</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Next place</button><p>Free driving · no speed limiter<br>Arrow keys or WASD · Space for the handbrake</p></aside><div id="panel">
-  <button id="hidepanel" title="Hide">–</button>
+<aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">University Library</option><option value="2">University Restaurant</option><option value="3">Montebello Residence</option><option value="4">Petit Château</option><option value="5">Chemistry · ICN</option><option value="6">Sports Center</option><option value="7">Park Lake</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Next place</button><p>Free driving · no speed limiter<br>Arrow keys or WASD · Space for the handbrake</p></aside><div id="panel" class="min">
+  <button id="hidepanel" title="Show settings" aria-label="Show settings" aria-expanded="false">+</button>
   <h1>Valrose Campus</h1>
   <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
     <div class="sub" id="datasrc">GPX relief · real OSM campus</div>

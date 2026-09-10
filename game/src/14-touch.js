@@ -21,7 +21,7 @@
   // panel collapsed (tap "+" to reopen it) instead of a ~200px-wide option
   // list eating a chunk of a narrow screen before the driver has even moved.
   const panel = el("panel"), toggle = el("hidepanel"), focusHint = el("focus-hint");
-  if (panel && toggle) { panel.classList.add("min"); toggle.textContent = "+"; }
+  if (panel && toggle) setPanelCollapsed(true);
   if (focusHint) focusHint.textContent = "Use the on-screen controls to drive";
 
   const setOrientationClass = () => {

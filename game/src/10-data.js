@@ -223,10 +223,15 @@ el("loadfile").onchange = ev => {
   fr.readAsText(f);
 };
 
-el("hidepanel").onclick = () => {
-  const collapsed = el("panel").classList.toggle("min");
-  el("hidepanel").textContent = collapsed ? "+" : "–";
-};
+function setPanelCollapsed(collapsed) {
+  const panel = el("panel"), toggle = el("hidepanel");
+  panel.classList.toggle("min", collapsed);
+  toggle.textContent = collapsed ? "+" : "–";
+  toggle.title = collapsed ? "Show settings" : "Hide settings";
+  toggle.setAttribute("aria-label", toggle.title);
+  toggle.setAttribute("aria-expanded", String(!collapsed));
+}
+el("hidepanel").onclick = () => setPanelCollapsed(!el("panel").classList.contains("min"));
 
 function download(obj, name) {
   const b = new Blob([JSON.stringify(obj)], { type: "application/json" });
