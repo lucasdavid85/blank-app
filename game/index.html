@@ -79,7 +79,35 @@
   #maptools{display:flex;gap:8px}
   #maptools .btn{width:auto;margin:0}
 #map{gap:8px;overflow:auto;padding:12px} #precision-toolbar,#feature-fields{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap} #feature-fields[hidden]{display:none} #precision-toolbar .btn,#feature-fields .btn{width:auto;margin:0} select,input{font:inherit;color:#f4f5f3;background:#22342e;border:1px solid #738179;padding:5px;border-radius:3px} #feature-size{width:85px} #feature-name{width:230px} #precision-toolbar,#feature-info,#coordinates,#feature-fields,#maphelp{font-size:14px} #mapc{touch-action:none} #coordinates{font-family:monospace} #panel{font-size:14px;max-height:calc(100vh - 36px);overflow:auto} .reference{display:block;color:#b6d6ee;font-size:12px;margin-top:7px} @media(max-width:600px){#panel{width:210px;right:10px} #mini{width:150px;height:150px} #timing{left:10px} #clock{font-size:28px}}
-#discovery{position:fixed;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:10px;left:10px;width:230px;font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}</style>
+#discovery{position:fixed;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:10px;left:10px;width:230px;font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}
+
+  /* Touch controls — on-screen driving pad for phones/tablets. Hidden on
+     mouse/trackpad devices; shown whenever the primary pointer is coarse
+     (a finger) so the kart stays drivable without a keyboard. */
+  #mobile-dock{position:fixed;right:16px;bottom:16px;z-index:25;display:flex;
+    flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
+  #mobile-dock #readout{position:static}
+  #touch-extra,#touch-pad{display:none;pointer-events:auto}
+  body.touch #touch-extra{display:flex;gap:8px}
+  body.touch #touch-pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:8px}
+  .tbtn{width:58px;height:58px;border-radius:14px;border:1px solid rgba(243,239,228,.35);
+    background:rgba(15,24,19,.75);color:var(--paper);font-size:24px;line-height:1;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
+    -webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
+  .tbtn:active,.tbtn.on{background:rgba(228,178,74,.5);border-color:rgba(228,178,74,.7)}
+  .tbtn.pill{width:auto;height:38px;border-radius:19px;padding:0 14px;font-size:13px;gap:6px}
+  #t-up{grid-column:2;grid-row:1}
+  #t-left{grid-column:1;grid-row:2}
+  #t-hand{grid-column:2;grid-row:2;border-radius:50%;font-size:16px}
+  #t-right{grid-column:3;grid-row:2}
+  #t-down{grid-column:2;grid-row:3}
+  #rotate-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30;
+    background:rgba(15,24,19,.85);border:1px solid rgba(243,239,228,.25);border-radius:20px;
+    padding:7px 14px;font-size:12.5px;pointer-events:none;display:none}
+  @media(max-width:600px){.tbtn{width:50px;height:50px;font-size:20px}
+    body.touch #touch-pad{grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px)}
+    body.touch.portrait #rotate-hint{display:block}}
+  </style>
 </head>
 <body>
 <canvas id="gl"></canvas>
@@ -91,10 +119,25 @@
   <div id="lap">lap 1</div><div id="gate-status" style="font-size:16px;margin-top:12px">Accelerate through the entrance gate</div>
 </div>
 
-<div class="hud" id="readout">
-  <div id="kmh">0<span>km/h</span></div>
-  <div id="grade">0.0 %</div>
-  <div id="alt">— m</div>
+<div id="rotate-hint">Rotate your phone for a wider view</div>
+
+<div id="mobile-dock">
+  <div class="hud" id="readout">
+    <div id="kmh">0<span>km/h</span></div>
+    <div id="grade">0.0 %</div>
+    <div id="alt">— m</div>
+  </div>
+  <div id="touch-extra">
+    <button class="tbtn pill" id="t-reset" aria-label="Reset">⟲ Reset</button>
+    <button class="tbtn pill" id="t-camera" aria-label="Change camera">📷 Caméra</button>
+  </div>
+  <div id="touch-pad">
+    <button class="tbtn" id="t-up" aria-label="Accelerate">▲</button>
+    <button class="tbtn" id="t-left" aria-label="Steer left">◀</button>
+    <button class="tbtn" id="t-hand" aria-label="Handbrake">✋</button>
+    <button class="tbtn" id="t-right" aria-label="Steer right">▶</button>
+    <button class="tbtn" id="t-down" aria-label="Brake">▼</button>
+  </div>
 </div>
 
 <aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">Bibliothèque</option><option value="2">Restaurant universitaire</option><option value="3">Résidence Montebello</option><option value="4">Petit Château</option><option value="5">Chimie · ICN</option><option value="6">Centre sportif</option><option value="7">Lac du parc</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Lieu suivant</button><p>Conduite libre · sans limiteur de vitesse<br>Flèches ou ZQSD · Espace pour freiner</p></aside><div id="panel">
@@ -107,6 +150,7 @@
       <div><b>Space</b>handbrake</div>
       <div><b>R</b>reset · <b>C</b>camera</div>
       <div><b>M</b>map &amp; annotations</div><div>Double click a building to name it</div>
+      <div>Phone: use the on-screen pad, bottom right</div>
     </div>
     <button class="btn" id="toggle-labels" onclick="toggleLabels()">Hide building names</button><button class="btn primary" id="fetch-all">Fetch real campus</button>
     <button class="btn" id="fetch-osm">Refresh OSM features</button>
@@ -150,6 +194,7 @@
   <script src="src/10-data.js"></script>
   <script src="src/12-landmarks.js"></script>
   <script src="src/13-modes.js"></script>
+  <script src="src/14-touch.js"></script>
   <script src="streamlit-bridge.js"></script>
   <script src="src/11-boot.js"></script>
 </body>
