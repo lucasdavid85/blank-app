@@ -223,7 +223,10 @@ el("loadfile").onchange = ev => {
   fr.readAsText(f);
 };
 
-el("hidepanel").onclick = () => el("panel").classList.toggle("min");
+el("hidepanel").onclick = () => {
+  const collapsed = el("panel").classList.toggle("min");
+  el("hidepanel").textContent = collapsed ? "+" : "–";
+};
 
 function download(obj, name) {
   const b = new Blob([JSON.stringify(obj)], { type: "application/json" });

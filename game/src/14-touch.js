@@ -17,6 +17,12 @@
   if (!coarse || !document.body) return;
   document.body.classList.add("touch");
 
+  // Give phones/iPads the full screen to drive on: start with the settings
+  // panel collapsed (tap "+" to reopen it) instead of a ~200px-wide option
+  // list eating a chunk of a narrow screen before the driver has even moved.
+  const panel = el("panel"), toggle = el("hidepanel");
+  if (panel && toggle) { panel.classList.add("min"); toggle.textContent = "+"; }
+
   const setOrientationClass = () => {
     document.body.classList.toggle("portrait", innerHeight > innerWidth);
   };
@@ -44,6 +50,6 @@
   bindKey("t-right", "arrowright");
   bindKey("t-hand", " ");
 
-  el("t-reset").addEventListener("pointerup", e => { e.preventDefault(); resetKart(); });
-  el("t-camera").addEventListener("pointerup", e => { e.preventDefault(); camMode = (camMode + 1) % 3; });
+  el("t-reset")?.addEventListener("pointerup", e => { e.preventDefault(); resetKart(); });
+  el("t-camera")?.addEventListener("pointerup", e => { e.preventDefault(); camMode = (camMode + 1) % 3; });
 })();
