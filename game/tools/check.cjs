@@ -9,6 +9,7 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 if(!/class="btn external" target="_blank" rel="noopener noreferrer" href="https:\/\/www\.vip-studio360\.fr\//.test(html))throw Error('Safe 360 campus tour link missing');
 if(!/<div id="panel" class="min">/.test(html))throw Error('Settings panel is not collapsed by default');
 if(!/id="touch-steer"[\s\S]*id="touch-center"[\s\S]*id="touch-pedals"/.test(html))throw Error('Two-thumb mobile layout missing');
+if(!/body\.touch #panel:not\(\.min\) #hidepanel\{[\s\S]*position:fixed/.test(html))throw Error('Mobile close button is not fixed');
 for(const m of html.matchAll(/<script src="(src\/[^"]+)"/g)){if(m[1].includes('11-boot'))continue;vm.runInContext(fs.readFileSync(path.join(root,m[1]),'utf8'),ctx,{filename:m[1]});}
 vm.runInContext(`
 loadDefaultTerrain();ingest(CAMPUS);

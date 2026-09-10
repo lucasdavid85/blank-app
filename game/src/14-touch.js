@@ -24,6 +24,14 @@
   if (panel && toggle) setPanelCollapsed(true);
   if (focusHint) focusHint.textContent = "Use the on-screen controls to drive";
 
+  // A tap back on the game also closes an open menu. This is useful on small
+  // screens and leaves the fixed × button as an always-visible alternative.
+  addEventListener("pointerdown", e => {
+    if (panel && !panel.classList.contains("min") && !panel.contains(e.target)) {
+      setPanelCollapsed(true);
+    }
+  }, { passive: true });
+
   const setOrientationClass = () => {
     document.body.classList.toggle("portrait", innerHeight > innerWidth);
   };

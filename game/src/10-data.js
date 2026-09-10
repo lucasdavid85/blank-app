@@ -226,8 +226,8 @@ el("loadfile").onchange = ev => {
 function setPanelCollapsed(collapsed) {
   const panel = el("panel"), toggle = el("hidepanel");
   panel.classList.toggle("min", collapsed);
-  toggle.textContent = collapsed ? "+" : "–";
-  toggle.title = collapsed ? "Show settings" : "Hide settings";
+  toggle.textContent = collapsed ? "+" : "×";
+  toggle.title = collapsed ? "Show settings" : "Close settings";
   toggle.setAttribute("aria-label", toggle.title);
   toggle.setAttribute("aria-expanded", String(!collapsed));
 }
