@@ -20,6 +20,8 @@ The main lake was absent because the original converter ignored its multipolygon
 
 Names appear on building signs and nearby overhead labels. Double click a building, or select Buildings in the map editor, to change its name and annotation. Apply dimensions confirms the fields. Export campus GeoJSON saves geometry, names and annotations, including the island. Save data pack also includes terrain. Save before closing: edits are not automatically stored.
 
+The settings panel includes an external **Open the 360° campus tour** button. It opens the Université Côte d'Azur virtual visit in a new browser tab so you can compare paths, façades, vegetation and landmarks while refining the campus model.
+
 Scroll to zoom the editor, drag with the right button to pan, drag a vertex to move it, use Shift and click to insert a vertex or Alt and click to remove one. Undo restores the previous edit.
 
 The Campus reference option shows building letters from the university MapHub map. Green markers fall inside existing footprints; orange markers are reference points without matching footprints. Southern Q, R and S and western U still need additional footprint coverage. Buildings were not moved merely to force a marker match. Their letters differ between historical campus diagrams, so the attached perspective drawing is a visual reference rather than a coordinate source.
@@ -29,6 +31,8 @@ The château roof volumes, dormers, pinnacles, stairs, window bands and island s
 ## Sources
 
 [CampusValrose map](https://maphub.net/CampusValrose/campus-valrose-2)
+
+[Université Côte d'Azur 360° campus tour](https://www.vip-studio360.fr/galerie360/visites/vv-universite-cote-dazur/vv-universite-cote-dazur-c.html?s=pano19&h=0&v=-10.2594&f=90.0000&skipintro&norotation)
 
 [IGN elevation service](https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/calcul-altimetrique/)
 

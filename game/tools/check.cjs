@@ -6,6 +6,7 @@ function classList(){const values=new Set();return{add:v=>values.add(v),remove:v
 function element(id){if(!elements.has(id))elements.set(id,{tagName:'DIV',value:id==='edit-layer'?'track':'',checked:true,width:700,height:700,style:{},classList:classList(),attributes:{},setAttribute:function(k,v){this.attributes[k]=String(v);},addEventListener:function(k,fn){this[k]=fn;},getContext:()=>context,getBoundingClientRect:()=>({left:0,top:0,width:700,height:700}),setPointerCapture:noop});return elements.get(id);}
 const ctx=vm.createContext({THREE,document:{body:element('body'),getElementById:element,createElement:()=>element('temp')},navigator:{maxTouchPoints:2},addEventListener:noop,innerWidth:1200,innerHeight:900,performance:{now:()=>0},console,URL,Blob,setTimeout,Float32Array,requestAnimationFrame:noop});
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+if(!/class="btn external" target="_blank" rel="noopener noreferrer" href="https:\/\/www\.vip-studio360\.fr\//.test(html))throw Error('Safe 360 campus tour link missing');
 for(const m of html.matchAll(/<script src="(src\/[^"]+)"/g)){if(m[1].includes('11-boot'))continue;vm.runInContext(fs.readFileSync(path.join(root,m[1]),'utf8'),ctx,{filename:m[1]});}
 vm.runInContext(`
 loadDefaultTerrain();ingest(CAMPUS);

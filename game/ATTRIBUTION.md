@@ -27,6 +27,12 @@ fitted to its elevations.
 
 Campus names, letters and location reference points: CampusValrose on MapHub, https://maphub.net/CampusValrose/campus-valrose-2. User supplied photographs inform approximate visual modelling.
 
+## 360° visual reference
+The Université Côte d'Azur virtual campus tour by VIP Studio 360 is linked from
+the game and can be used as an external visual reference when refining the
+campus model. No tour imagery is bundled with this project.
+https://www.vip-studio360.fr/galerie360/visites/vv-universite-cote-dazur/vv-universite-cote-dazur-c.html?s=pano19
+
 Terrain: IGN RGE ALTI, Licence Ouverte, retrieved 10 September 2026. Coordinates sampled at 5 metre spacing using the IGN elevation service.
 
 Terrain: IGN RGE ALTI, Licence Ouverte, retrieved 10 September 2026. Coordinates sampled at 5 metre spacing using the IGN elevation service.

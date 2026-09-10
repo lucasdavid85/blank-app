@@ -73,6 +73,9 @@
   .btn:disabled{opacity:.4;cursor:default}
   .btn.primary{background:rgba(197,106,92,.28);border-color:rgba(197,106,92,.6)}
   .btn.primary:hover{background:rgba(197,106,92,.42)}
+  a.btn{text-decoration:none}
+  .btn.external{text-align:center;background:rgba(78,132,151,.24);border-color:rgba(137,194,214,.55)}
+  .btn.external:hover{background:rgba(78,132,151,.4)}
   #panel input[type=file]{position:absolute;width:0;height:0;opacity:0}
   #status{margin-top:10px;font-size:11.5px;opacity:.6;min-height:2.6em}
   #hidepanel{position:absolute;top:9px;right:11px;width:auto;background:none;border:0;
@@ -187,7 +190,9 @@
     <label class="btn" tabindex="0">Load data pack / GeoJSON
       <input type="file" id="loadfile" accept=".json,.geojson">
     </label>
-    <button class="btn" onclick="toggleMap()">Edit campus and lake</button><div id="status">Mapped footprints · names checked against the campus map · estimated architectural details</div><a class="reference" target="_blank" rel="noopener" href="https://univ-cotedazur.fr/medias/fichier/plan-campus-valrose-2025-a4_1752832057222-pdf">Official campus plan</a><a class="reference" target="_blank" rel="noopener" href="https://maphub.net/CampusValrose/campus-valrose-2">Interactive campus map</a><a class="reference" target="_blank" rel="noopener" href="https://dossiersinventaire.maregionsud.fr/dossier/IA06003427">Château architecture reference</a><a class="reference" target="_blank" rel="noopener" href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+    <button class="btn" onclick="toggleMap()">Edit campus and lake</button>
+    <a class="btn external" target="_blank" rel="noopener noreferrer" href="https://www.vip-studio360.fr/galerie360/visites/vv-universite-cote-dazur/vv-universite-cote-dazur-c.html?s=pano19&amp;h=0&amp;v=-10.2594&amp;f=90.0000&amp;skipintro&amp;norotation" aria-label="Open the Valrose 360 degree campus tour in a new tab">Open the 360° campus tour ↗</a>
+    <div id="status">Mapped footprints · names checked against the campus map · estimated architectural details</div><a class="reference" target="_blank" rel="noopener" href="https://univ-cotedazur.fr/medias/fichier/plan-campus-valrose-2025-a4_1752832057222-pdf">Official campus plan</a><a class="reference" target="_blank" rel="noopener" href="https://maphub.net/CampusValrose/campus-valrose-2">Interactive campus map</a><a class="reference" target="_blank" rel="noopener" href="https://dossiersinventaire.maregionsud.fr/dossier/IA06003427">Château architecture reference</a><a class="reference" target="_blank" rel="noopener" href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
   </div>
 </div>
 

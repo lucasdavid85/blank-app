@@ -16,7 +16,7 @@ python -m venv .venv
 
 Open the local address printed by Streamlit. On macOS or Linux, use `.venv/bin/python` for the last two commands.
 
-Click inside the game before driving. Use arrow keys or WASD, Space for the handbrake, R to reset, C for the camera, and M for the map. Choose Race or Visit from the Mode menu. Phones and tablets automatically show multi-touch driving controls and use a full-height game view. Use Save data pack to preserve edits before reloading.
+Click inside the game before driving. Use arrow keys or WASD, Space for the handbrake, R to reset, C for the camera, and M for the map. Choose Race or Visit from the Mode menu. Phones and tablets automatically show multi-touch driving controls and use a full-height game view. The settings panel also links to an external 360° campus tour for visual reference. Use Save data pack to preserve edits before reloading.
 
 ## Performance
 
