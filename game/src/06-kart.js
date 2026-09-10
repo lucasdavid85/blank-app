@@ -9,7 +9,8 @@
 const KART = {
   radius: 0.85, engine: 21, brake: 34, maxSpeed: 20, maxSpeedOff: 8,
   steer: 2.5, gripOn: 0.87, gripSlide: 0.975, drag: 0.9965, dragOff: 0.962,
-  slopeGain: 3.2     // gravity multiplier — 1.0 is physical, higher makes hills matter
+  slopeGain: 3.2,    // gravity multiplier — 1.0 is physical, higher makes hills matter
+  launchBoost: 1.6  // race-only acceleration multiplier from the entrance to the circuit
 };
 const G = 9.81;
 
@@ -62,9 +63,14 @@ function step(dt) {
 
   const near = onLine(kart.x, kart.y, race.running ? race.s : null);
   kart.offroad = near.dist > TRACK_W;
-  const vmax = kart.offroad ? KART.maxSpeedOff : KART.maxSpeed;
+  // The entrance sits just outside the mapped racing surface. Treat the short
+  // gate-to-circuit approach as a launch lane instead of applying the off-road
+  // limiter there; otherwise the kart reaches the gate at only 29 km/h.
+  const launching = !visiting && !race.running;
+  const vmax = launching ? KART.maxSpeed : (kart.offroad ? KART.maxSpeedOff : KART.maxSpeed);
 
-  if (throttle) fwd += KART.engine * dt * (!visiting && kart.offroad ? 0.45 : 1);
+  const launch = launching ? KART.launchBoost : 1;
+  if (throttle) fwd += KART.engine * launch * dt * (!visiting && kart.offroad && !launching ? 0.45 : 1);
   if (braking)  fwd -= (fwd > 0 ? KART.brake : KART.engine * 0.5) * dt;
   if (!visiting && fwd >  vmax) fwd = vmax;
   if (!visiting && fwd < -vmax * 0.4) fwd = -vmax * 0.4;
@@ -86,7 +92,7 @@ function step(dt) {
 
   const grip = hand ? KART.gripSlide : (kart.offroad ? 0.94 : KART.gripOn);
   lat *= Math.pow(grip, dt*60);
-  fwd *= Math.pow(!visiting && kart.offroad ? KART.dragOff : KART.drag, dt*60);
+  fwd *= Math.pow(!visiting && kart.offroad && !launching ? KART.dragOff : KART.drag, dt*60);
   if (hand) fwd *= Math.pow(0.985, dt*60);
 
   kart.slip = Math.abs(lat);

@@ -10,7 +10,24 @@ function labelTexture(text){
  const shown=lines.slice(0,3);shown.forEach((t,i)=>g.fillText(t,256,64+(i-(shown.length-1)/2)*31,470));
  const texture=new THREE.CanvasTexture(c);texture.minFilter=THREE.LinearFilter;return texture;
 }
-function displayName(b){return (b.properties.campusRefs?.length?b.properties.campusRefs.join(' / ')+' · ':'')+(b.name||'Bâtiment '+(b.properties.localId||String(world.buildings.indexOf(b)+1)));}
+const ENGLISH_PLACE_NAMES=new Map([
+ ['Amphi Chimie','Chemistry Lecture Hall'],['Amphi Informatique','Computer Science Lecture Hall'],
+ ['Amphi Physique','Physics Lecture Hall'],['Bibliothèque universitaire','University Library'],
+ ['Bâtiment T','Building T'],['Centre sportif','Sports Center'],['Entrée Principale','Main Entrance'],
+ ['Grand Château et Théâtre','Grand Château and Theater'],['IBV · Centre de Biochimie','IBV · Biochemistry Center'],
+ ['ICN · Chimie Recherche','ICN · Chemistry Research'],['Laboratoire J. A. Dieudonné','J. A. Dieudonné Laboratory'],
+ ['Laboratoire Lagrange · Hippolyte Fizeau','Lagrange Laboratory · Hippolyte Fizeau'],
+ ['Lac du parc','Park Lake'],['Mathématiques · Amphi Henri Poincaré','Mathematics · Henri Poincaré Lecture Hall'],
+ ['Petit Château · Scolarité','Petit Château · Student Services'],['Resto U Montebello','Montebello University Restaurant'],
+ ['Résidence Universitaire Alvéole','Alvéole University Residence'],
+ ['Résidence universitaire Montebello','Montebello University Residence'],
+ ['TP Chimie','Chemistry Teaching Labs'],['TP Physique et Électronique','Physics and Electronics Teaching Labs']
+]);
+function englishPlaceName(name){
+ const fountain=/^Fontaine (\d+)$/i.exec(name||'');
+ return fountain?'Fountain '+fountain[1]:(ENGLISH_PLACE_NAMES.get(name)||name);
+}
+function displayName(b){return (b.properties.campusRefs?.length?b.properties.campusRefs.join(' / ')+' · ':'')+(englishPlaceName(b.name)||'Building '+(b.properties.localId||String(world.buildings.indexOf(b)+1)));}
 function buildLabels(){
  clearGroup(labelGroup);labelGroup=new THREE.Group();scene.add(labelGroup);labelGroup.visible=labelsVisible;
  for(const b of world.buildings){
@@ -36,7 +53,7 @@ function buildGate(){
  const group=new THREE.Group();group.position.set(q[0],heightAt(...q),-q[1]);group.rotation.y=Math.atan2(gate.forward[0],-gate.forward[1]);landmarkGroup.add(group);gate.group=group;
  for(const x of [-4.2,4.2]){box(group,1.1,3.8,1.1,x,1.9,0,0xc9bea4);box(group,1.45,.3,1.45,x,3.95,0,0xe5d7b5);}
  for(const side of [-1,1]){const leaf=new THREE.Group();leaf.position.x=side*1.8;group.add(leaf);for(let j=0;j<9;j++)box(leaf,.08,2.8,.10,-1.6+j*.4,1.55,0,0x273d3b);for(const y of [.45,1.8,2.85])box(leaf,3.5,.1,.14,0,y,0,0x304847);gate.pieces.push({mesh:leaf,home:leaf.position.clone(),velocity:new THREE.Vector3()});}
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:labelTexture('UNIVERSITÉ · VALROSE'),side:THREE.DoubleSide}));sign.position.set(0,4.7,0);group.add(sign);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:labelTexture('UNIVERSITY · VALROSE'),side:THREE.DoubleSide}));sign.position.set(0,4.7,0);group.add(sign);
 }
 function resetGate(){gate.broken=false;for(const p of gate.pieces){p.mesh.position.copy(p.home);p.mesh.rotation.set(0,0,0);p.velocity.set(0,0,0);}if(el('gate-status'))el('gate-status').textContent='Accelerate through the entrance gate';}
 function gateSpawn(){return[gate.position[0]-gate.forward[0]*10,gate.position[1]-gate.forward[1]*10];}
@@ -48,7 +65,7 @@ function updateGate(dt,previous){
  if(speed>=3){gate.broken=true;gate.pieces.forEach((p,i)=>p.velocity.set(i?2.5:-2.5,3,Math.min(10,speed*.6)));
   // Race start launch: breaking the gate snaps the kart straight to top speed
   // instead of bleeding it off, so the race actually starts at full pace.
-  const boost=kart.offroad?KART.maxSpeedOff:KART.maxSpeed,n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
+  const boost=KART.maxSpeed,n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
   el('gate-status').textContent='Gate broken · explore the campus';}
  else{const sign=before<=0?-1:1;kart.x+=f[0]*(sign*(KART.radius+.06)-along);kart.y+=f[1]*(sign*(KART.radius+.06)-along);kart.vx=kart.vy=0;}
 }

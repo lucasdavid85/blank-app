@@ -20,8 +20,9 @@
   // Give phones/iPads the full screen to drive on: start with the settings
   // panel collapsed (tap "+" to reopen it) instead of a ~200px-wide option
   // list eating a chunk of a narrow screen before the driver has even moved.
-  const panel = el("panel"), toggle = el("hidepanel");
+  const panel = el("panel"), toggle = el("hidepanel"), focusHint = el("focus-hint");
   if (panel && toggle) { panel.classList.add("min"); toggle.textContent = "+"; }
+  if (focusHint) focusHint.textContent = "Use the on-screen controls to drive";
 
   const setOrientationClass = () => {
     document.body.classList.toggle("portrait", innerHeight > innerWidth);
@@ -30,17 +31,33 @@
   addEventListener("resize", setOrientationClass);
   addEventListener("orientationchange", setOrientationClass);
 
-  // Holding a button fires pointerdown once; pointerup/cancel/leave all
-  // release it so a dragged-off or interrupted touch never sticks a key on.
+  // Holding a button fires pointerdown once; pointer capture keeps the hold
+  // reliable while the finger moves, and release/cancel always clears it.
   function bindKey(id, key) {
     const node = el(id);
     if (!node) return;
-    const press = e => { e.preventDefault(); node.classList.add("on"); keys.add(key); };
-    const release = e => { e.preventDefault(); node.classList.remove("on"); keys.delete(key); };
+    const pointers = new Set();
+    const press = e => {
+      e.preventDefault();
+      pointers.add(e.pointerId);
+      node.classList.add("on");
+      node.setAttribute("aria-pressed", "true");
+      keys.add(key);
+      node.setPointerCapture?.(e.pointerId);
+    };
+    const release = e => {
+      e.preventDefault();
+      pointers.delete(e.pointerId);
+      if (pointers.size) return;
+      node.classList.remove("on");
+      node.setAttribute("aria-pressed", "false");
+      keys.delete(key);
+    };
+    node.setAttribute("aria-pressed", "false");
     node.addEventListener("pointerdown", press);
     node.addEventListener("pointerup", release);
     node.addEventListener("pointercancel", release);
-    node.addEventListener("pointerleave", release);
+    node.addEventListener("lostpointercapture", release);
     node.addEventListener("contextmenu", e => e.preventDefault());
   }
 

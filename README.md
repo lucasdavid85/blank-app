@@ -16,15 +16,15 @@ python -m venv .venv
 
 Open the local address printed by Streamlit. On macOS or Linux, use `.venv/bin/python` for the last two commands.
 
-Click inside the game before driving. Use arrows or ZQSD, Space to brake, R to reset, C for camera and M for the map. Choose Course or Visite from the Mode menu. Use Save data pack to preserve edits before reloading.
+Click inside the game before driving. Use arrow keys or WASD, Space for the handbrake, R to reset, C for the camera, and M for the map. Choose Race or Visit from the Mode menu. Phones and tablets automatically show multi-touch driving controls and use a full-height game view. Use Save data pack to preserve edits before reloading.
 
 ## Performance
 
 Python serves the page once. All driving, physics, collision checks and rendering run in JavaScript in the browser. Steering sends no requests to Python and cannot trigger Streamlit reruns. Scripts, Three.js and initial campus data are bundled locally. Optional data refresh buttons still require internet access.
 
-Rapide is the default graphics preset, with shadows disabled and pixel ratio capped at 1. Équilibré and Détaillé increase rendering quality. Physics uses a fixed 120 Hz simulation step, with bounded catchup after stalls. The HUD refreshes at 10 Hz and the minimap at 15 Hz. The scene renders with requestAnimationFrame. Hidden tabs suspend simulation. Severe frame drops can slow simulation time because catchup is bounded.
+Fast is the default graphics preset, with shadows disabled and pixel ratio capped at 1. Balanced and Detailed increase rendering quality. Physics uses a fixed 120 Hz simulation step, with bounded catchup after stalls. The HUD refreshes at 10 Hz and the minimap at 15 Hz. The scene renders with requestAnimationFrame. Hidden tabs suspend simulation. Severe frame drops can slow simulation time because catchup is bounded.
 
-Zero latency is not possible: frame rate, GPU load, display refresh and input devices still affect response. The FPS counter is an approximate rendering rate, not an input latency measurement. Use Rapide and close other demanding applications for the smoothest experience.
+Zero latency is not possible: frame rate, GPU load, display refresh and input devices still affect response. The FPS counter is an approximate rendering rate, not an input latency measurement. Use Fast and close other demanding applications for the smoothest experience.
 
 ## Implementation and checks
 

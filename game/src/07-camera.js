@@ -69,5 +69,5 @@ function frame(now){
  if(now-lastHUD>=100){hud();updateLabels();lastHUD=now;}
  if(now-lastMini>=1000/15){drawMini();lastMini=now;}
  if(now-lastDiscovery>=250){updateDiscovery();lastDiscovery=now;}
- fpsFrames++;if(now-fpsStart>=1000){el('fps').textContent=Math.round(fpsFrames*1000/(now-fpsStart))+' FPS · calcul local';fpsFrames=0;fpsStart=now;}
+ fpsFrames++;if(now-fpsStart>=1000){el('fps').textContent=Math.round(fpsFrames*1000/(now-fpsStart))+' FPS · local rendering';fpsFrames=0;fpsStart=now;}
 }

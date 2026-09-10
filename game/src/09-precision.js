@@ -4,7 +4,7 @@ const history=[];
 const mode=()=>el('edit-layer').value;
 const ring=()=>selection?.kind==='building'?world.buildings[selection.i].poly:selection?.kind==='water'?world.water[selection.i]:selection?.kind==='path'?world.paths[selection.i]:world.line;
 function checkpoint(){history.push(exportFeatures());if(history.length>40)history.shift();}
-function toggleMap(){mapOpen=!mapOpen;mapEl.classList.toggle('on',mapOpen);keys.clear();if(mapOpen)resizeMap();else rebuildAll();}
+function toggleMap(){mapOpen=!mapOpen;mapEl.classList.toggle('on',mapOpen);document.body?.classList.toggle('map-open',mapOpen);keys.clear();if(mapOpen)resizeMap();else rebuildAll();}
 function resizeMap(){const s=Math.max(180,Math.min(innerWidth-32,innerHeight-330,900));mapc.width=mapc.height=Math.round(s);drawMap();}
 function screen([x,y]){return[mapc.width/2+(x-center[0])*mapScale,mapc.height/2-(y-center[1])*mapScale];}
 function mapPick(e){const r=mapc.getBoundingClientRect();return[center[0]+((e.clientX-r.left)*mapc.width/r.width-mapc.width/2)/mapScale,center[1]-((e.clientY-r.top)*mapc.height/r.height-mapc.height/2)/mapScale];}
@@ -19,9 +19,9 @@ function drawMap(){
  xctx.strokeStyle='#f0b942';xctx.lineWidth=2*px;path(xctx,world.line);xctx.stroke();
  if(selection||mode()==='track'){const p=ring();xctx.strokeStyle='#fff';xctx.lineWidth=2*px;path(xctx,p);xctx.stroke();xctx.fillStyle='#f5bd48';for(const q of p){xctx.beginPath();xctx.arc(...q,4*px,0,Math.PI*2);xctx.fill();}}
  xctx.setTransform(1,0,0,1,0,0);xctx.font='14px Segoe UI';xctx.fillStyle='#eef6fa';xctx.textAlign='left';xctx.fillText('N ↑',16,24);
- if(el('map-references').checked){for(const ref of CAMPUS_REFERENCE.points){const q=screen(toLocal(...ref.coordinates));if(q[0]<0||q[0]>S||q[1]<0||q[1]>S)continue;xctx.fillStyle=ref.matched?'#74e8d0':'#ff9c75';xctx.beginPath();xctx.arc(q[0],q[1],5,0,Math.PI*2);xctx.fill();xctx.fillText(ref.title+(ref.matched?'':' · reference only'),q[0]+8,q[1]-8);}}
+ if(el('map-references').checked){for(const ref of CAMPUS_REFERENCE.points){const q=screen(toLocal(...ref.coordinates));if(q[0]<0||q[0]>S||q[1]<0||q[1]>S)continue;xctx.fillStyle=ref.matched?'#74e8d0':'#ff9c75';xctx.beginPath();xctx.arc(q[0],q[1],5,0,Math.PI*2);xctx.fill();xctx.fillText(englishPlaceName(ref.title)+(ref.matched?'':' · reference only'),q[0]+8,q[1]-8);}}
  const meters=zoom>5?10:zoom>2?25:100;xctx.fillRect(16,S-28,meters*mapScale,3);xctx.fillText(meters+' m',16,S-36);
- if(zoom>1.5)for(const b of world.buildings){if(!b.name)continue;const q=screen(b.poly[0]);if(q[0]>0&&q[0]<S&&q[1]>0&&q[1]<S){xctx.fillStyle='#fff';xctx.fillText(b.name,q[0],q[1]);}}
+ if(zoom>1.5)for(const b of world.buildings){if(!b.name)continue;const q=screen(b.poly[0]);if(q[0]>0&&q[0]<S&&q[1]>0&&q[1]<S){xctx.fillStyle='#fff';xctx.fillText(englishPlaceName(b.name),q[0],q[1]);}}
 }
 function closestSegment(p,q){let best={d:Infinity,i:0,q};for(let i=0;i<p.length-1;i++){const a=p[i],b=p[i+1],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy||1)));const c=[a[0]+t*dx,a[1]+t*dy],d=Math.hypot(c[0]-q[0],c[1]-q[1]);if(d<best.d)best={d,i,q:c};}return best;}
 function snapped(q){if(!el('snap-paths').checked||mode()!=='track')return q;let best={d:Infinity};for(const p of world.paths){if(p.properties?.highway==='steps')continue;const n=closestSegment(p,q);if(n.d<best.d)best=n;}return best.d<8?best.q:q;}

@@ -4,11 +4,11 @@ Open index.html in the extracted folder, or open the separate ValroseCampus.html
 
 ## Two modes
 
-Course uses the circuit supplied in your draft. Accelerate through the entrance gate and follow the racing surface. The clock begins when you reach the circuit. R restores the kart and gate. Restaurer votre circuit restores the original route after an edit.
+Race uses the circuit supplied in your draft. Acceleration is boosted on the short launch to the entrance gate; break through it and follow the racing surface. The clock begins when you reach the circuit. R restores the kart and gate. Restore your circuit restores the original route after an edit.
 
-Visite offers free driving without a programmed speed limit, including away from the circuit. Engine power and drag still affect acceleration. Choose a destination to see its introduction, direct distance and blue map marker. Approach it to record a discovery. The distance is a straight line, not route guidance. Buildings and water still block the car. The race timer and racing surface are hidden in this mode.
+Visit offers free driving without a programmed speed limit, including away from the circuit. Engine power and drag still affect acceleration. Choose a destination to see its introduction, direct distance and blue map marker. Approach it to record a discovery. The distance is a straight line, not route guidance. Buildings and water still block the car. The race timer and racing surface are hidden in this mode.
 
-Drive with arrows, WASD or ZQSD. Space applies the handbrake. C changes camera. M opens the map editor.
+Drive with the arrow keys or WASD. Space applies the handbrake. C changes camera. M opens the map editor. Phones and tablets automatically display multi-touch controls; the settings panel starts collapsed to leave room for driving.
 
 ## Geographic corrections
 

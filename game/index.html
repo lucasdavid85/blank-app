@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Valrose Kart 3D</title>
 <style>
   :root{
@@ -36,12 +36,13 @@
     --pad-gap: clamp(6px, 2vmin, 8px);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;overflow:hidden;background:#0e1512;color:var(--paper);
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:#0e1512;color:var(--paper);
     font-family:"Avenir Next","Segoe UI",system-ui,sans-serif}
   #gl{position:fixed;top:0;left:0;display:block}
+  body.touch #gl{touch-action:none}
 
   .hud{position:fixed;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.7)}
-  #timing{top:18px;left:clamp(10px,4vw,22px)}
+  #timing{top:max(18px,env(safe-area-inset-top));left:max(clamp(10px,4vw,22px),env(safe-area-inset-left))}
   #clock{font-family:ui-monospace,"SF Mono","Roboto Mono",monospace;font-size:clamp(24px,7vmin,40px);
     font-weight:500;letter-spacing:-.02em;line-height:1}
   #best{font-family:ui-monospace,monospace;font-size:13px;opacity:.7;margin-top:4px}
@@ -58,7 +59,7 @@
     border:1px solid rgba(243,239,228,.2);border-radius:3px;background:rgba(10,18,14,.55);
     backdrop-filter:blur(4px)}
 
-  #panel{position:fixed;top:18px;right:clamp(10px,4vw,22px);width:clamp(168px,50vw,246px);font-size:12.5px;line-height:1.5;
+  #panel{position:fixed;z-index:20;top:max(18px,env(safe-area-inset-top));right:max(clamp(10px,4vw,22px),env(safe-area-inset-right));width:clamp(168px,50vw,246px);font-size:12.5px;line-height:1.5;
     background:rgba(15,24,19,.86);border:1px solid rgba(243,239,228,.15);border-radius:4px;
     padding:14px;backdrop-filter:blur(8px)}
   #panel h1{font-size:15px;font-weight:600;margin-bottom:2px}
@@ -77,8 +78,10 @@
   #hidepanel{position:absolute;top:9px;right:11px;width:auto;background:none;border:0;
     padding:0;margin:0;opacity:.5;font-size:15px;cursor:pointer;color:inherit}
   #panel.min .body{display:none}
+  body.touch #panel.min{width:auto;max-width:calc(100vw - 20px);padding:10px 38px 10px 11px}
+  body.touch #panel.min h1{font-size:13px;margin:0;white-space:nowrap}
 
-  #map{position:fixed;inset:0;background:rgba(8,14,11,.93);display:none;
+  #map{position:fixed;z-index:40;inset:0;background:rgba(8,14,11,.93);display:none;
     align-items:center;justify-content:center;flex-direction:column;gap:14px}
   #map.on{display:flex}
   #mapc{border:1px solid rgba(243,239,228,.22);border-radius:3px;cursor:crosshair}
@@ -86,7 +89,7 @@
   #maptools{display:flex;gap:8px}
   #maptools .btn{width:auto;margin:0}
 #map{gap:8px;overflow:auto;padding:12px} #precision-toolbar,#feature-fields{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap} #feature-fields[hidden]{display:none} #precision-toolbar .btn,#feature-fields .btn{width:auto;margin:0} select,input{font:inherit;color:#f4f5f3;background:#22342e;border:1px solid #738179;padding:5px;border-radius:3px} #feature-size{width:85px} #feature-name{width:230px} #precision-toolbar,#feature-info,#coordinates,#feature-fields,#maphelp{font-size:14px} #mapc{touch-action:none} #coordinates{font-family:monospace} #panel{font-size:14px;max-height:calc(100vh - 36px);overflow:auto} .reference{display:block;color:#b6d6ee;font-size:12px;margin-top:7px}
-#discovery{position:fixed;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:10px;left:10px;width:230px;font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}
+#discovery{position:fixed;z-index:20;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));width:min(230px,calc(100vw - 20px));font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}
 
   /* Touch controls — on-screen driving pad for phones/tablets. Hidden on
      mouse/trackpad devices; shown whenever the primary pointer is coarse or
@@ -94,7 +97,7 @@
      kart stays drivable with no keyboard — phone or iPad alike. Every size
      below is fluid (var(--pad-btn) etc., defined in :root), so the pad
      scales continuously with the screen instead of jumping at one cutoff. */
-  #mobile-dock{position:fixed;right:clamp(10px,4vw,16px);bottom:clamp(10px,4vw,16px);
+  #mobile-dock{position:fixed;right:max(clamp(10px,4vw,16px),env(safe-area-inset-right));bottom:max(clamp(10px,4vw,16px),env(safe-area-inset-bottom));
     z-index:25;display:flex;flex-direction:column;align-items:flex-end;
     gap:clamp(8px,2vmin,10px);pointer-events:none}
   #mobile-dock #readout{position:static}
@@ -105,7 +108,7 @@
   .tbtn{width:var(--pad-btn);height:var(--pad-btn);border-radius:14px;border:1px solid rgba(243,239,228,.35);
     background:rgba(15,24,19,.75);color:var(--paper);font-size:clamp(18px,5vmin,24px);line-height:1;
     display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);
-    -webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
+    -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
   .tbtn:active,.tbtn.on{background:rgba(228,178,74,.5);border-color:rgba(228,178,74,.7)}
   .tbtn.pill{width:auto;height:clamp(34px,9vmin,38px);border-radius:19px;padding:0 14px;
     font-size:clamp(12px,3vmin,13px);gap:6px}
@@ -114,12 +117,24 @@
   #t-hand{grid-column:2;grid-row:2;border-radius:50%;font-size:clamp(14px,4vmin,16px)}
   #t-right{grid-column:3;grid-row:2}
   #t-down{grid-column:2;grid-row:3}
+  body.map-open #mobile-dock{display:none}
   #rotate-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30;
     background:rgba(15,24,19,.85);border:1px solid rgba(243,239,228,.25);border-radius:20px;
     padding:7px 14px;font-size:12.5px;pointer-events:none;display:none}
   /* Only phone-width screens get the rotate nudge — an iPad in portrait
      already has plenty of room, so it's left alone. */
-  @media(max-width:600px){body.touch.portrait #rotate-hint{display:block}}
+  @media(max-width:600px){
+    body.touch.portrait #rotate-hint{display:block}
+    body.touch #gate-status{font-size:12px!important;max-width:44vw;line-height:1.25}
+    body.touch #best,body.touch #lap{font-size:11px}
+  }
+  @media(max-height:520px) and (orientation:landscape){
+    :root{--pad-btn:clamp(42px,11vmin,52px);--pad-gap:5px}
+    body.touch #mobile-dock{flex-direction:row;align-items:flex-end}
+    body.touch #touch-extra{flex-direction:column}
+    body.touch .tbtn.pill{width:var(--pad-btn);height:34px;padding:0;font-size:18px}
+    body.touch .tbtn.pill .pill-label{display:none}
+  }
   </style>
 </head>
 <body>
@@ -141,29 +156,29 @@
     <div id="alt">— m</div>
   </div>
   <div id="touch-extra">
-    <button class="tbtn pill" id="t-reset" aria-label="Reset">⟲ Reset</button>
-    <button class="tbtn pill" id="t-camera" aria-label="Change camera">📷 Caméra</button>
+    <button class="tbtn pill" id="t-reset" type="button" aria-label="Reset kart"><span aria-hidden="true">⟲</span><span class="pill-label">Reset</span></button>
+    <button class="tbtn pill" id="t-camera" type="button" aria-label="Change camera"><span aria-hidden="true">📷</span><span class="pill-label">Camera</span></button>
   </div>
   <div id="touch-pad">
-    <button class="tbtn" id="t-up" aria-label="Accelerate">▲</button>
-    <button class="tbtn" id="t-left" aria-label="Steer left">◀</button>
-    <button class="tbtn" id="t-hand" aria-label="Handbrake">✋</button>
-    <button class="tbtn" id="t-right" aria-label="Steer right">▶</button>
-    <button class="tbtn" id="t-down" aria-label="Brake">▼</button>
+    <button class="tbtn" id="t-up" type="button" aria-label="Accelerate">▲</button>
+    <button class="tbtn" id="t-left" type="button" aria-label="Steer left">◀</button>
+    <button class="tbtn" id="t-hand" type="button" aria-label="Handbrake">✋</button>
+    <button class="tbtn" id="t-right" type="button" aria-label="Steer right">▶</button>
+    <button class="tbtn" id="t-down" type="button" aria-label="Brake or reverse">▼</button>
   </div>
 </div>
 
-<aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">Bibliothèque</option><option value="2">Restaurant universitaire</option><option value="3">Résidence Montebello</option><option value="4">Petit Château</option><option value="5">Chimie · ICN</option><option value="6">Centre sportif</option><option value="7">Lac du parc</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Lieu suivant</button><p>Conduite libre · sans limiteur de vitesse<br>Flèches ou ZQSD · Espace pour freiner</p></aside><div id="panel">
+<aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">University Library</option><option value="2">University Restaurant</option><option value="3">Montebello Residence</option><option value="4">Petit Château</option><option value="5">Chemistry · ICN</option><option value="6">Sports Center</option><option value="7">Park Lake</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Next place</button><p>Free driving · no speed limiter<br>Arrow keys or WASD · Space for the handbrake</p></aside><div id="panel">
   <button id="hidepanel" title="Hide">–</button>
-  <h1>Valrose Campus</h1><div id="focus-hint" style="color:#f1d280">Cliquez dans le jeu pour conduire</div><label>Graphismes <select id="graphics"><option value="fast">Rapide</option><option value="balanced">Équilibré</option><option value="detailed">Détaillé</option></select></label><button class="btn" id="fullscreen">Plein écran</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Mesure des images par seconde…</div><label>Mode <select id="play-mode"><option value="race">Course · votre circuit</option><option value="visit">Visite · découverte libre</option></select></label><button class="btn" id="restore-circuit">Restaurer votre circuit</button>
-  <div class="sub" id="datasrc">GPX relief · real OSM campus</div>
-  <div class="body">
+  <h1>Valrose Campus</h1>
+  <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
+    <div class="sub" id="datasrc">GPX relief · real OSM campus</div>
     <div class="keys">
       <div><b>↑ ↓ ← →</b>drive</div>
       <div><b>Space</b>handbrake</div>
       <div><b>R</b>reset · <b>C</b>camera</div>
-      <div><b>M</b>map &amp; annotations</div><div>Double click a building to name it</div>
-      <div>Phone: use the on-screen pad, bottom right</div>
+      <div><b>M</b>map &amp; annotations</div><div>Double-click a building to name it</div>
+      <div>Phone or tablet: use the on-screen controls</div>
     </div>
     <button class="btn" id="toggle-labels" onclick="toggleLabels()">Hide building names</button><button class="btn primary" id="fetch-all">Fetch real campus</button>
     <button class="btn" id="fetch-osm">Refresh OSM features</button>
