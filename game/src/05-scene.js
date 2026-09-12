@@ -92,7 +92,8 @@ function buildTerrain() {
 
 /* ---- racing surface, draped on the relief ---- */
 function buildTrack() {
-  if (trackMesh) { scene.remove(trackMesh); trackMesh.geometry.dispose(); }
+  if (trackMesh) clearGroup(trackMesh);
+  trackMesh = null;
   buildRaceBarriers();
   buildGeese();
   const L = world.line;
@@ -135,6 +136,7 @@ function buildTrack() {
   trackMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({
     vertexColors: true, side: THREE.DoubleSide }));
   trackMesh.receiveShadow = true;
+  trackMesh.add(buildBoostLine(samples));
   scene.add(trackMesh);
   if(typeof playMode!=='undefined')trackMesh.visible=playMode==='race';
 }

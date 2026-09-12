@@ -24,7 +24,7 @@ function setMode(value){
  for(const [id,mode] of [['mode-race','race'],['mode-visit','visit']])el(id).setAttribute('aria-pressed',String(playMode===mode));
  if(trackMesh)trackMesh.visible=racing;
  if(barrierGroup)barrierGroup.visible=racing;
- resetKart();for(const p of gate.pieces)p.mesh.visible=racing;updateDiscovery();
+ resetKart();for(const p of gate.pieces)p.mesh.visible=racing;updateDiscovery();hud();
 }
 function updateDiscovery(){if(playMode!=='visit')return;for(let i=0;i<places.length;i++){const p=placeLocation(places[i]);if(p&&Math.hypot(kart.x-p[0],kart.y-p[1])<25)discovered.add(i);}const place=places[selectedPlace],p=placeLocation(place),d=p?Math.hypot(kart.x-p[0],kart.y-p[1]):null;el('place-title').textContent=place.name;el('place-text').textContent=place.text;el('place-distance').textContent=d===null?'Position unavailable':Math.round(d)+' m straight-line distance · '+(discovered.has(selectedPlace)?'Discovered':'Follow the blue marker on the map');el('discovery-progress').textContent=discovered.size+' / '+places.length+' places discovered';}
 el('play-mode').onchange=e=>setMode(e.target.value);

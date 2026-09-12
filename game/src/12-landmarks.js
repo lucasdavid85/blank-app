@@ -63,9 +63,8 @@ function updateGate(dt,previous){
  if(Math.abs(side)>gate.halfWidth+KART.radius||!(Math.abs(along)<KART.radius||along*before<0))return;
  const speed=Math.hypot(kart.vx,kart.vy);
  if(speed>=3){gate.broken=true;gate.pieces.forEach((p,i)=>p.velocity.set(i?2.5:-2.5,3,Math.min(10,speed*.6)));
-  // Race start launch: breaking the gate snaps the kart straight to top speed
-  // instead of bleeding it off, so the race actually starts at full pace.
-  const boost=KART.maxSpeed,n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
+  // Give the entrance launch a minimum speed while preserving faster motion.
+  const boost=Math.max(speed,KART.launchSpeed),n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
   el('gate-status').textContent='Gate broken · explore the campus';}
  else{const sign=before<=0?-1:1;kart.x+=f[0]*(sign*(KART.radius+.06)-along);kart.y+=f[1]*(sign*(KART.radius+.06)-along);kart.vx=kart.vy=0;}
 }

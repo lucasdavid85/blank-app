@@ -7,9 +7,9 @@
 /* ═══════════════ 5. PHYSICS ═══════════════ */
 
 const KART = {
-  radius: 0.85, engine: 21, brake: 34, maxSpeed: 20, maxSpeedOff: 8,
-  steer: 2.5, gripOn: 0.87, gripSlide: 0.975, drag: 0.9965, dragOff: 0.962,
-  slopeGain: 3.2,    // gravity multiplier — 1.0 is physical, higher makes hills matter
+  radius: 0.85, engine: 21, brake: 34, launchSpeed: 20,
+  boostHalfWidth: 0.7, centerBoost: 1.85,
+  steer: 2.5, gripOn: 0.87, gripSlide: 0.975, drag: 0.9965,
   launchBoost: 1.6  // race-only acceleration multiplier from the entrance to the circuit
 };
 const G = 9.81;
@@ -26,12 +26,12 @@ function resetKart() {
     kart.a = Math.atan2(L[1][0]-L[0][0], L[1][1]-L[0][1]);
   } else { kart.x = kart.y = 0; kart.a = 0; }
   if(gate.group){[kart.x,kart.y]=gateSpawn();kart.a=Math.atan2(...gate.forward);resetGate();}
-  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false;
+  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false; kart.boosting = false;
   race.s = onLine(kart.x, kart.y).s;
   const course = JSON.stringify(world.line);
   if (race.course !== course) { race.best = null; race.results.length = 0; race.course = course; }
   race.progress = 0; race.lap = race.results.length + 1; race.t = 0;
-  race.running = false; race.finished = false; race.lastTick = null;
+  race.running = false; race.finished = false; race.lastTick = null; race.currentResult = null;
   closeFinish(); clearTouchControls(); keys.clear(); resetGeese();
   while (skidGroup.children.length) {
     const m = skidGroup.children.pop(); m.geometry.dispose(); skidGroup.remove(m);
@@ -68,17 +68,12 @@ function step(dt) {
 
   const near = onLine(kart.x, kart.y, race.running ? race.s : null);
   kart.offroad = visiting && near.dist > TRACK_W;
-  // The entrance sits just outside the mapped racing surface. Treat the short
-  // gate-to-circuit approach as a launch lane instead of applying the off-road
-  // limiter there; otherwise the kart reaches the gate at only 29 km/h.
   const launching = !visiting && !race.running;
-  const vmax = KART.maxSpeed;
-
-  const launch = launching ? KART.launchBoost : 1;
-  if (throttle) fwd += KART.engine * launch * dt;
+  kart.boosting = !visiting && race.running && near.dist <= KART.boostHalfWidth &&
+    throttle && !braking && !hand && fwd >= 0 && alignedWithCircuit(hx,hy,near.s);
+  const acceleration = kart.boosting ? KART.centerBoost : launching ? KART.launchBoost : 1;
+  if (throttle) fwd += KART.engine * acceleration * dt;
   if (braking)  fwd -= (fwd > 0 ? KART.brake : KART.engine * 0.5) * dt;
-  if (!visiting && fwd >  vmax) fwd = vmax;
-  if (!visiting && fwd < -vmax * 0.4) fwd = -vmax * 0.4;
 
   // ── the relief acts here ──
   // component of gravity along the heading; uphill bleeds speed, downhill adds it,
@@ -86,9 +81,8 @@ function step(dt) {
   const [gx, gy] = gradientAt(kart.x, kart.y);
   const alongSlope = gx*hx + gy*hy;                    // rise per metre travelled
   kart.grade = alongSlope;
-  fwd -= G * (visiting ? 1 : KART.slopeGain) * alongSlope /
+  fwd -= G * alongSlope /
          Math.sqrt(1 + alongSlope*alongSlope) * dt;
-  if (!visiting && fwd > vmax * 1.55) fwd = vmax * 1.55;
   // sideways slope nudges the kart downhill across the track
   lat -= G * 0.5 * (gx*rx + gy*ry) * dt;
 

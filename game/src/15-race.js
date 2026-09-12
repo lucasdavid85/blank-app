@@ -63,18 +63,53 @@ function buildRaceBarriers() {
     }
   }
   if(!sections.length)return;
-  const rails=new THREE.InstancedMesh(new THREE.BoxGeometry(.3,.85,1),
-    new THREE.MeshLambertMaterial({color:0xffffff}),sections.length);
-  const caps=new THREE.InstancedMesh(new THREE.BoxGeometry(.4,.12,1),
-    new THREE.MeshLambertMaterial({color:0xe7e8de}),sections.length);
+  const rails=new THREE.InstancedMesh(new THREE.BoxGeometry(.12,.14,1),
+    new THREE.MeshLambertMaterial({color:0xc8d2c6}),sections.length);
+  const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.08,.5,.08),
+    new THREE.MeshLambertMaterial({color:0x52665c}),sections.length);
   const dummy=new THREE.Object3D();
   sections.forEach((p,i)=>{
-    dummy.position.set(p.x,heightAt(p.x,p.y)+.55,-p.y);
+    dummy.position.set(p.x,heightAt(p.x,p.y)+.44,-p.y);
     dummy.rotation.y=p.a;dummy.scale.set(1,1,p.length);dummy.updateMatrix();
-    rails.setMatrixAt(i,dummy.matrix);rails.setColorAt(i,new THREE.Color(Math.floor(i/2)%2?0xf4f1e7:0xca594b));
-    dummy.position.y+=.48;dummy.updateMatrix();caps.setMatrixAt(i,dummy.matrix);
+    rails.setMatrixAt(i,dummy.matrix);
+    dummy.position.y=heightAt(p.x,p.y)+.25;dummy.scale.set(1,1,1);
+    dummy.updateMatrix();posts.setMatrixAt(i,dummy.matrix);
   });
-  rails.castShadow=true;rails.receiveShadow=true;barrierGroup.add(rails,caps);
+  rails.castShadow=true;rails.receiveShadow=true;barrierGroup.add(rails,posts);
+}
+
+function alignedWithCircuit(hx,hy,s) {
+  const a=pointAtS(s-.5),b=pointAtS(s+.5),dx=b[0]-a[0],dy=b[1]-a[1];
+  return (hx*dx+hy*dy)/(Math.hypot(dx,dy)||1)>.7;
+}
+function buildBoostLine(samples) {
+  const group=new THREE.Group();group.name='center-boost';
+  for(const [width,color,opacity,lift] of [[KART.boostHalfWidth,0xa2ec78,.18,.255],[.1,0xc3fa91,1,.27]]){
+    const positions=[],indices=[],last=samples.length-1;
+    samples.forEach(([x,y],i)=>{
+      const k=i===last?0:i,a=samples[(k-1+last)%last],b=samples[(k+1)%last];
+      const dx=b[0]-a[0],dy=b[1]-a[1],n=Math.hypot(dx,dy)||1;
+      for(const side of [-1,1]){
+        const px=x+dy/n*width*side,py=y-dx/n*width*side;
+        positions.push(px,heightAt(px,py)+lift,-py);
+      }
+      if(i<last){const j=i*2;indices.push(j,j+2,j+1,j+1,j+2,j+3);}
+    });
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);
+    group.add(new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,opacity,transparent:opacity<1,depthWrite:opacity===1,side:THREE.DoubleSide})));
+  }
+  const positions=[];
+  for(let s=0;s<world.length;s+=8){
+    const p=pointAtS(s),a=pointAtS(s-.5),b=pointAtS(s+.5),dx=b[0]-a[0],dy=b[1]-a[1],n=Math.hypot(dx,dy)||1;
+    for(const side of [-1,1])for(const [forward,right] of [[.55,0],[-.35,side*.5],[-.18,side*.5]]){
+      const x=p[0]+dx/n*forward+dy/n*right,y=p[1]+dy/n*forward-dx/n*right;
+      positions.push(x,heightAt(x,y)+.28,-y);
+    }
+  }
+  const arrows=new THREE.BufferGeometry();arrows.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  group.add(new THREE.Mesh(arrows,new THREE.MeshBasicMaterial({color:0xd2f9b6,side:THREE.DoubleSide})));
+  return group;
 }
 
 function tickRaceClock(now) {
@@ -90,6 +125,7 @@ function finishDuration(t) {
   return minutes ? minutes+' '+(minutes===1?'minute':'minutes')+' '+seconds+' seconds' : seconds+' seconds';
 }
 function closeFinish() {
+  clearResultPicture();
   const wasOpen=!el('finish').hidden;
   el('finish').hidden=true;document.body?.classList.remove('race-finished');
   if(wasOpen)el('gl').focus?.({preventScroll:true});
@@ -98,14 +134,14 @@ function finishRace() {
   if(playMode!=='race'||race.finished)return;
   tickRaceClock(performance.now());
   race.finished=true;race.running=false;race.lastTick=null;
-  const result={lap:race.lap,time:race.t};race.results.push(result);
+  const result={lap:race.lap,time:race.t,name:driverName()};race.currentResult=result;race.results.push(result);
   const record=race.best===null||race.t<race.best;
   if(record)race.best=race.t;
-  clearTouchControls();keys.clear();kart.vx=kart.vy=0;
+  clearTouchControls();keys.clear();kart.vx=kart.vy=0;kart.boosting=false;
   el('finish-time').textContent='You finished it in '+finishDuration(race.t)+'!';
   el('finish-best').textContent=(record?'New best time! · ':'Best time · ')+fmt(race.best);
-  const bestLaps=race.results.slice().sort((a,b)=>a.time-b.time).slice(0,5);
-  el('score-rows').innerHTML=bestLaps.map((r,i)=>'<tr'+(r===result?' class="current"':'')+'><td>'+(i+1)+'</td><td>Lap '+r.lap+'</td><td>'+fmt(r.time)+'</td></tr>').join('');
+  renderScores();
+  queueResultPicture();
   el('finish').hidden=false;document.body?.classList.add('race-finished');
   el('race-again').focus?.();hud();
 }

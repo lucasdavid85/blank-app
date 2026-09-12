@@ -52,6 +52,9 @@ function hud() {
   el("best").textContent = "best · " + (race.best === null ? "—" : fmt(race.best));
   el("lap").textContent = "lap " + race.lap + (kart.offroad ? " · off track" : "");
   el("kmh").innerHTML = Math.round(Math.hypot(kart.vx, kart.vy)*3.6) + "<span>km/h</span>";
+  document.body?.classList.toggle('boosting', Boolean(kart.boosting));
+  el('boost-status').hidden = playMode !== 'race';
+  el('boost-status').textContent = kart.boosting ? 'CENTER BOOST!' : 'Green center line = boost';
   const pct = kart.grade*100;
   el("grade").textContent = (pct >= 0 ? "+" : "") + pct.toFixed(1) + " % grade";
   el("grade").style.color = pct > 3 ? "#e2917f" : pct < -3 ? "#8fd18a" : "";
@@ -67,6 +70,7 @@ function frame(now){
  const dt=Math.min(MAX_STEPS*DT,Math.max(0,(now-last)/1000));last=now;acc+=dt;
  let steps=0;while(acc>=DT&&steps<MAX_STEPS){step(DT);acc-=DT;steps++;}if(steps===MAX_STEPS)acc=0;
  placeKart();updateCamera(dt);renderer.render(scene,camera);
+ if(resultCapturePending)captureResultPicture();
  if(now-lastHUD>=100){hud();updateLabels();lastHUD=now;}
  if(now-lastMini>=1000/15){drawMini();lastMini=now;}
  if(now-lastDiscovery>=250){updateDiscovery();lastDiscovery=now;}

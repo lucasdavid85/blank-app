@@ -131,7 +131,7 @@
   body.touch #touch-pad{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
   #direction-pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:var(--pad-size);height:var(--pad-size);padding:7px;border:3px solid rgba(255,255,255,.9);border-radius:50%;background:rgba(250,249,242,.87);box-shadow:0 4px 20px #0004;pointer-events:auto;touch-action:none}
   #direction-pad button{width:100%;height:100%;border:0;border-radius:12px;background:transparent;color:#161f19;padding:2px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
-  #direction-pad button.on,#direction-pad button:active{background:#e4b24a}
+  #direction-pad button.on{background:#e4b24a}
   #direction-pad svg{width:100%;height:100%;display:block;pointer-events:none;fill:#fffdf5;stroke:#17231d;stroke-width:3;stroke-linejoin:round}
   #t-up{grid-column:2;grid-row:1}
   #t-down{grid-column:2;grid-row:3}
@@ -165,7 +165,17 @@
   .finish-actions{display:flex;gap:10px}
   .finish-actions button{flex:1;min-height:48px;border:1px solid #a3b19c;border-radius:8px;font:600 15px system-ui;cursor:pointer;color:var(--ink);background:transparent}
   #race-again{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-  button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  #boost-status{margin-top:8px;font:600 12px system-ui;color:#d2edb2}
+  body.boosting #kmh,body.boosting #boost-status{color:#c2fb8c;text-shadow:0 0 18px #9fec7755}
+  .result-share{border-top:1px solid #d5dbcd;margin:18px 0;padding-top:16px}
+  .result-share label{display:block;font-weight:650;font-size:14px;margin-bottom:6px}
+  #driver-name{width:100%;min-height:46px;background:#fffdf6;border:1px solid #a3b19c;border-radius:8px;padding:10px 12px;color:var(--ink);font-size:16px}
+  #result-preview{display:block;width:auto;max-width:100%;max-height:240px;margin:14px auto;border-radius:10px;background:#132920}
+  #share-status{font-size:12px;line-height:1.4;color:#576d58;margin-top:9px}
+  .finish-actions button:disabled{opacity:.5;cursor:default}
+  .finish-card td small{display:block;font-size:11px;font-weight:400;opacity:.65}
+  .finish-card td:nth-child(2){max-width:180px;overflow-wrap:anywhere}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   @media(max-height:520px) and (orientation:landscape){
     :root{--pad-size:150px;--pad-btn:42px;--pad-gap:6px}
     body.touch #mini{width:76px;height:76px;top:max(10px,env(safe-area-inset-top));right:calc(max(12px,env(safe-area-inset-right)) + 60px);left:auto;bottom:auto}
@@ -199,7 +209,14 @@
     <div class="eyebrow">Valrose circuit</div>
     <h2 id="finish-title">Lap complete!</h2>
     <p id="finish-time" role="status"></p><p id="finish-best"></p>
-    <table><caption>Your best laps this session</caption><thead><tr><th scope="col">Rank</th><th scope="col">Lap</th><th scope="col">Time</th></tr></thead><tbody id="score-rows"></tbody></table>
+    <table><caption>Your best laps this session</caption><thead><tr><th scope="col">Rank</th><th scope="col">Driver</th><th scope="col">Time</th></tr></thead><tbody id="score-rows"></tbody></table>
+    <div class="result-share">
+      <label for="driver-name">Your name</label>
+      <input id="driver-name" type="text" maxlength="28" autocomplete="nickname" placeholder="Your name">
+      <img id="result-preview" alt="Your race postcard with name, finish time, and campus picture" hidden>
+      <div class="finish-actions"><button id="share-result" type="button" disabled>Share picture</button><button id="download-result" type="button" disabled>Download picture</button></div>
+      <p id="share-status" role="status" aria-live="polite"></p>
+    </div>
     <div class="finish-actions"><button id="race-again" type="button">Race again</button><button id="finish-visit" type="button">Explore campus</button></div>
   </div>
 </div>
@@ -209,9 +226,10 @@
     <div id="kmh">0<span>km/h</span></div>
     <div id="grade">0.0 %</div>
     <div id="alt">— m</div>
+    <div id="boost-status">Green center line = boost</div>
   </div>
   <div id="touch-pad">
-    <div id="direction-pad" role="group" aria-label="Four-arrow driving controls">
+    <div id="direction-pad" role="group" aria-label="Slide on the driving pad; diagonals accelerate and steer">
       <button id="t-up" type="button" aria-label="Accelerate"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
       <button id="t-left" type="button" aria-label="Steer left"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
       <span class="pad-center" aria-hidden="true"></span>
@@ -287,6 +305,7 @@
   <script src="src/14-touch.js"></script>
   <script src="src/15-race.js"></script>
   <script src="src/16-geese.js"></script>
+  <script src="src/17-sharing.js"></script>
   <script src="streamlit-bridge.js"></script>
   <script src="src/11-boot.js"></script>
 </body>
