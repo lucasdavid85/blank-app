@@ -142,8 +142,9 @@ async function fetchDEM() {
 
 function rebuildAll() {
   indexCollisionBounds();
-  buildHillshade(); buildTerrain(); buildTrack();
+  buildHillshade(); buildTerrain();
   buildBuildings(); buildWater(); buildTrees(); buildPaths(); buildLandmarks();
+  buildTrack();
   resetKart();
   if(typeof playMode!=='undefined'){if(trackMesh)trackMesh.visible=playMode==='race';for(const p of gate.pieces)p.mesh.visible=playMode==='race';}
   el("datasrc").textContent =

@@ -11,9 +11,25 @@ const places=[
  {lake:true,name:'Park Lake',text:'The main lake contains an island. The smaller pools elsewhere in the park are fountains.'}
 ];
 function placeLocation(place){const p=place.lake?world.water.find(w=>w.properties.waterKind==='lake'):world.buildings.find(b=>place.match.test(b.name))?.poly;if(!p)return null;return p.slice(0,-1).reduce((a,q)=>[a[0]+q[0]/(p.length-1),a[1]+q[1]/(p.length-1)],[0,0]);}
-function setMode(value){playMode=value==='visit'?'visit':'race';el('play-mode').value=playMode;el('timing').style.display=playMode==='race'?'block':'none';el('discovery').hidden=playMode!=='visit';if(trackMesh)trackMesh.visible=playMode==='race';resetKart();for(const p of gate.pieces)p.mesh.visible=playMode==='race';updateDiscovery();}
+function setMode(value){
+ if(mapOpen)toggleMap();
+ playMode=value==='visit'?'visit':'race';
+ const racing=playMode==='race';
+ el('play-mode').value=playMode;
+ document.body?.classList.toggle('visiting',!racing);
+ el('timing').style.display=racing?'block':'none';
+ el('discovery').hidden=true;
+ el('panel').hidden=!racing;
+ setPanelCollapsed(true);
+ for(const [id,mode] of [['mode-race','race'],['mode-visit','visit']])el(id).setAttribute('aria-pressed',String(playMode===mode));
+ if(trackMesh)trackMesh.visible=racing;
+ if(barrierGroup)barrierGroup.visible=racing;
+ resetKart();for(const p of gate.pieces)p.mesh.visible=racing;updateDiscovery();
+}
 function updateDiscovery(){if(playMode!=='visit')return;for(let i=0;i<places.length;i++){const p=placeLocation(places[i]);if(p&&Math.hypot(kart.x-p[0],kart.y-p[1])<25)discovered.add(i);}const place=places[selectedPlace],p=placeLocation(place),d=p?Math.hypot(kart.x-p[0],kart.y-p[1]):null;el('place-title').textContent=place.name;el('place-text').textContent=place.text;el('place-distance').textContent=d===null?'Position unavailable':Math.round(d)+' m straight-line distance · '+(discovered.has(selectedPlace)?'Discovered':'Follow the blue marker on the map');el('discovery-progress').textContent=discovered.size+' / '+places.length+' places discovered';}
 el('play-mode').onchange=e=>setMode(e.target.value);
+el('mode-race').onclick=()=>setMode('race');
+el('mode-visit').onclick=()=>setMode('visit');
 el('place-select').onchange=e=>{selectedPlace=Number(e.target.value);updateDiscovery();};
 el('next-place').onclick=()=>{selectedPlace=(selectedPlace+1)%places.length;el('place-select').value=String(selectedPlace);updateDiscovery();};
 el('restore-circuit').onclick=()=>{const f=CAMPUS.features.find(f=>f.properties.role==='track');world.line=f.geometry.coordinates.map(q=>toLocal(...q));measureLine();buildTrack();setMode('race');say('Your supplied circuit is restored.');};

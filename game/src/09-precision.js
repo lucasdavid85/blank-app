@@ -4,7 +4,7 @@ const history=[];
 const mode=()=>el('edit-layer').value;
 const ring=()=>selection?.kind==='building'?world.buildings[selection.i].poly:selection?.kind==='water'?world.water[selection.i]:selection?.kind==='path'?world.paths[selection.i]:world.line;
 function checkpoint(){history.push(exportFeatures());if(history.length>40)history.shift();}
-function toggleMap(){mapOpen=!mapOpen;mapEl.classList.toggle('on',mapOpen);document.body?.classList.toggle('map-open',mapOpen);keys.clear();if(mapOpen)resizeMap();else rebuildAll();}
+function toggleMap(){if(race.finished)return;tickRaceClock(performance.now());mapOpen=!mapOpen;race.lastTick=null;mapEl.classList.toggle('on',mapOpen);document.body?.classList.toggle('map-open',mapOpen);clearTouchControls();keys.clear();if(mapOpen)resizeMap();else rebuildAll();}
 function resizeMap(){const s=Math.max(180,Math.min(innerWidth-32,innerHeight-330,900));mapc.width=mapc.height=Math.round(s);drawMap();}
 function screen([x,y]){return[mapc.width/2+(x-center[0])*mapScale,mapc.height/2-(y-center[1])*mapScale];}
 function mapPick(e){const r=mapc.getBoundingClientRect();return[center[0]+((e.clientX-r.left)*mapc.width/r.width-mapc.width/2)/mapScale,center[1]-((e.clientY-r.top)*mapc.height/r.height-mapc.height/2)/mapScale];}

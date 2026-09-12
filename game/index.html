@@ -32,9 +32,9 @@
        so phones, phablets and iPads each get a size in between, not just
        "desktop" or "tiny". vmin tracks whichever side is tighter, which is
        what matters for controls — the short side in either orientation. */
-    --pad-btn: clamp(46px, 12vmin, 64px);
-    --pedal-btn: clamp(58px, 15vmin, 82px);
-    --pad-gap: clamp(6px, 2vmin, 8px);
+    --pad-size:clamp(156px,42vmin,204px);
+    --pad-btn:clamp(42px,11vmin,54px);
+    --pad-gap:8px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:#0e1512;color:var(--paper);
@@ -112,45 +112,70 @@
 #map{gap:8px;overflow:auto;padding:12px} #precision-toolbar,#feature-fields{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap} #feature-fields[hidden]{display:none} #precision-toolbar .btn,#feature-fields .btn{width:auto;margin:0} select,input{font:inherit;color:#f4f5f3;background:#22342e;border:1px solid #738179;padding:5px;border-radius:3px} #feature-size{width:85px} #feature-name{width:230px} #precision-toolbar,#feature-info,#coordinates,#feature-fields,#maphelp{font-size:14px} #mapc{touch-action:none} #coordinates{font-family:monospace} #panel{font-size:14px;max-height:calc(100vh - 36px);overflow:auto} .reference{display:block;color:#b6d6ee;font-size:12px;margin-top:7px}
 #discovery{position:fixed;z-index:20;top:18px;left:22px;width:290px;padding:16px;background:rgba(15,30,31,.94);border:1px solid #6e9892;border-radius:6px;font-size:15px;line-height:1.45} #discovery[hidden]{display:none} #discovery p{margin:10px 0} #discovery select,#play-mode{max-width:100%}@media(max-width:650px){#discovery{top:auto;bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left));width:min(230px,calc(100vw - 20px));font-size:13px}body:has(#discovery:not([hidden])) #mini{display:none}}
 
-  /* Two-thumb touch layout inspired by an arcade racing HUD: steering stays
-     under the left thumb, pedals under the right, and utility buttons sit in
-     the middle. Fluid sizing covers phones, phablets and iPads. */
+  [hidden]{display:none!important}
+  #mode-switch{position:fixed;z-index:26;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(15,24,19,.85);border:1px solid rgba(243,239,228,.25);border-radius:24px}
+  #mode-switch button{cursor:pointer;font:600 14px system-ui;color:var(--paper);background:transparent;border:0;border-radius:20px;padding:10px 16px;min-height:42px}
+  #mode-switch button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
+  body.visiting #panel,body.visiting #discovery{display:none!important}
+  #goose-notice{position:fixed;z-index:27;top:max(82px,calc(env(safe-area-inset-top) + 76px));left:50%;transform:translateX(-50%);max-width:calc(100vw - 24px);width:max-content;padding:10px 16px;border-radius:22px;background:#fff5d9;color:#423014;border:2px solid #e4b24a;font-size:14px;font-weight:600;text-align:center;pointer-events:none}
   #mobile-dock{position:fixed;inset:0;z-index:25;pointer-events:none}
-  #mobile-dock #readout{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));text-align:right}
-  body.touch #mobile-dock #readout{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pedal-btn) + var(--pedal-btn) + var(--pad-gap) + 8px)}
+  #mobile-dock #readout{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom))}
   #touch-pad{display:none}
-  body.touch #touch-pad{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none}
-  .touch-cluster,#touch-center,#touch-extra{display:flex;align-items:flex-end;gap:var(--pad-gap);pointer-events:auto}
-  #touch-center{flex-direction:column;align-items:center}
-  #touch-extra{gap:var(--pad-gap)}
-  #touch-pedals{flex-direction:column-reverse}
-  .tbtn{width:var(--pad-btn);height:var(--pad-btn);border-radius:50%;border:2px solid rgba(81,238,225,.82);
-    background:radial-gradient(circle at 50% 35%,rgba(43,91,91,.8),rgba(8,37,41,.82));color:#eafffb;
-    box-shadow:0 0 0 3px rgba(24,185,190,.2),inset 0 0 12px rgba(55,235,223,.18),0 0 15px rgba(39,222,215,.38);
-    font-size:clamp(20px,5vmin,28px);line-height:1;display:flex;align-items:center;justify-content:center;
-    backdrop-filter:blur(5px);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
-  .tbtn:active,.tbtn.on{background:radial-gradient(circle,rgba(238,195,75,.72),rgba(98,67,16,.88));border-color:#ffe27c;box-shadow:0 0 18px rgba(255,220,91,.8)}
-  .tbtn.utility{width:clamp(38px,9vmin,48px);height:clamp(38px,9vmin,48px);font-size:clamp(16px,4vmin,20px)}
-  .tbtn.pedal{height:var(--pedal-btn);border-radius:999px;flex-direction:column;gap:4px;font-size:clamp(17px,4.5vmin,24px)}
-  .tbtn.pedal span{font:700 clamp(8px,2vmin,10px)/1 system-ui,sans-serif;letter-spacing:.08em}
-  #t-hand{width:clamp(44px,10vmin,54px);height:clamp(44px,10vmin,54px);font-size:clamp(17px,4vmin,21px)}
-  body.touch #mini{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-btn) + 24px)}
-  body.touch #discovery{top:max(76px,calc(env(safe-area-inset-top) + 60px));bottom:auto;max-height:46vh;overflow:auto}
-  body.map-open #mobile-dock{display:none}
-  #rotate-hint{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30;
-    background:rgba(15,24,19,.85);border:1px solid rgba(243,239,228,.25);border-radius:20px;
-    padding:7px 14px;font-size:12.5px;pointer-events:none;display:none}
-  /* Only phone-width screens get the rotate nudge — an iPad in portrait
-     already has plenty of room, so it's left alone. */
-  @media(max-width:600px){
-    body.touch.portrait #rotate-hint{display:block}
-    body.touch #gate-status{font-size:12px!important;max-width:44vw;line-height:1.25}
-    body.touch #best,body.touch #lap{font-size:11px}
-  }
+  body.touch #mode-switch{top:max(10px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));transform:none}
+  body.touch #panel{top:max(10px,env(safe-area-inset-top))}
+  body.touch #timing{top:calc(max(10px,env(safe-area-inset-top)) + 62px)}
+  body.touch #goose-notice{top:calc(max(10px,env(safe-area-inset-top)) + 182px);font-size:12px;padding:8px 12px}
+  body.touch #gate-status{max-width:calc(100vw - 24px);font-size:12px!important;margin-top:7px!important}
+  body.touch #best,body.touch #lap{font-size:11px}
+  body.touch #mobile-dock #readout{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-btn)*3 + 40px)}
+  body.touch #touch-pad{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+  #direction-pad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:var(--pad-size);height:var(--pad-size);padding:7px;border:3px solid rgba(255,255,255,.9);border-radius:50%;background:rgba(250,249,242,.87);box-shadow:0 4px 20px #0004;pointer-events:auto;touch-action:none}
+  #direction-pad button{width:100%;height:100%;border:0;border-radius:12px;background:transparent;color:#161f19;padding:2px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
+  #direction-pad button.on,#direction-pad button:active{background:#e4b24a}
+  #direction-pad svg{width:100%;height:100%;display:block;pointer-events:none;fill:#fffdf5;stroke:#17231d;stroke-width:3;stroke-linejoin:round}
+  #t-up{grid-column:2;grid-row:1}
+  #t-down{grid-column:2;grid-row:3}
+  #t-left{grid-column:1;grid-row:2}
+  #t-right{grid-column:3;grid-row:2}
+  #t-down svg{transform:rotate(180deg)}
+  #t-left svg{transform:rotate(-90deg)}
+  #t-right svg{transform:rotate(90deg)}
+  .pad-center{grid-column:2;grid-row:2;align-self:center;justify-self:center;width:12px;height:12px;border-radius:50%;background:#17231d;opacity:.3}
+  #touch-center{display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:auto}
+  #touch-extra{display:flex;flex-direction:column;gap:var(--pad-gap)}
+  .tbtn{width:var(--pad-btn);height:var(--pad-btn);border-radius:50%;border:2px solid #f3efe4b3;background:rgba(15,24,19,.8);color:var(--paper);font-size:23px;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  .tbtn.on,.tbtn:active{background:var(--gold);color:var(--ink)}
+  #t-hand{font-size:12px;font-weight:700}
+  body.touch #mini{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-size) + 18px);width:clamp(96px,26vmin,132px);height:clamp(96px,26vmin,132px)}
+  body.touch.visiting #grade,body.touch.visiting #alt{display:none}
+  body.map-open #mobile-dock,body.map-open #mode-switch,body.map-open #goose-notice{display:none}
+  body.race-finished #mobile-dock,body.race-finished #panel,body.race-finished #mode-switch,body.race-finished #goose-notice{display:none}
+  #finish{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:rgba(7,18,14,.72);backdrop-filter:blur(6px);overflow:auto}
+  .finish-card{width:min(440px,100%);max-height:100%;overflow:auto;background:var(--paper);color:var(--ink);border-radius:18px;padding:clamp(18px,5vmin,30px);box-shadow:0 12px 50px #0005}
+  .finish-card .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#576d58}
+  .finish-card h2{font-size:28px;margin:6px 0 12px}
+  #finish-time{font-size:clamp(20px,5vmin,26px);font-weight:650;line-height:1.35}
+  #finish-best{margin:10px 0 18px;color:#54714a;font-weight:600}
+  .finish-card table{width:100%;border-collapse:collapse;font-size:15px;margin:0 0 18px}
+  .finish-card caption{text-align:left;font-weight:650;margin-bottom:10px}
+  .finish-card th{text-align:left;font-size:12px;color:#607063;padding-bottom:8px}
+  .finish-card td{padding:10px 0;border-top:1px solid #d5dbcd}
+  .finish-card td:last-child,.finish-card th:last-child{text-align:right;font-family:ui-monospace,monospace}
+  .finish-card tr.current{color:#8a4a30;font-weight:700}
+  .finish-actions{display:flex;gap:10px}
+  .finish-actions button{flex:1;min-height:48px;border:1px solid #a3b19c;border-radius:8px;font:600 15px system-ui;cursor:pointer;color:var(--ink);background:transparent}
+  #race-again{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   @media(max-height:520px) and (orientation:landscape){
-    :root{--pad-btn:clamp(42px,11vmin,52px);--pedal-btn:clamp(52px,14vmin,64px);--pad-gap:5px}
-    body.touch #mini{width:92px;height:92px;bottom:calc(max(10px,env(safe-area-inset-bottom)) + var(--pad-btn) + 18px)}
-    body.touch #mobile-dock #readout{bottom:calc(max(10px,env(safe-area-inset-bottom)) + var(--pedal-btn) + var(--pedal-btn) + 8px)}
+    :root{--pad-size:150px;--pad-btn:42px;--pad-gap:6px}
+    body.touch #mini{width:76px;height:76px;top:max(10px,env(safe-area-inset-top));right:calc(max(12px,env(safe-area-inset-right)) + 60px);left:auto;bottom:auto}
+    body.touch #mobile-dock #readout{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 150px)}
+    body.touch #grade,body.touch #alt,body.touch #lap,body.touch #gate-status{display:none}
+    body.touch #goose-notice{top:max(14px,env(safe-area-inset-top));max-width:40vw}
+    .finish-card{padding:16px 22px}
+    .finish-card h2{font-size:22px;margin:3px 0 6px}
+    #finish-best{margin:6px 0 10px}
+    .finish-card td{padding:7px 0}
   }
   </style>
 </head>
@@ -164,7 +189,20 @@
   <div id="lap">lap 1</div><div id="gate-status" style="font-size:16px;margin-top:12px">Accelerate through the entrance gate</div>
 </div>
 
-<div id="rotate-hint">Rotate your phone for a wider view</div>
+<div id="mode-switch" role="group" aria-label="Game mode">
+  <button id="mode-race" type="button" aria-pressed="true">Race</button>
+  <button id="mode-visit" type="button" aria-pressed="false">Visit</button>
+</div>
+<div id="goose-notice" role="status" aria-live="polite" hidden></div>
+<div id="finish" role="dialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-time" hidden>
+  <div class="finish-card">
+    <div class="eyebrow">Valrose circuit</div>
+    <h2 id="finish-title">Lap complete!</h2>
+    <p id="finish-time" role="status"></p><p id="finish-best"></p>
+    <table><caption>Your best laps this session</caption><thead><tr><th scope="col">Rank</th><th scope="col">Lap</th><th scope="col">Time</th></tr></thead><tbody id="score-rows"></tbody></table>
+    <div class="finish-actions"><button id="race-again" type="button">Race again</button><button id="finish-visit" type="button">Explore campus</button></div>
+  </div>
+</div>
 
 <div id="mobile-dock">
   <div class="hud" id="readout">
@@ -173,20 +211,19 @@
     <div id="alt">— m</div>
   </div>
   <div id="touch-pad">
-    <div class="touch-cluster" id="touch-steer" aria-label="Steering controls">
-      <button class="tbtn" id="t-left" type="button" aria-label="Steer left">◀</button>
-      <button class="tbtn" id="t-right" type="button" aria-label="Steer right">▶</button>
+    <div id="direction-pad" role="group" aria-label="Four-arrow driving controls">
+      <button id="t-up" type="button" aria-label="Accelerate"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
+      <button id="t-left" type="button" aria-label="Steer left"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
+      <span class="pad-center" aria-hidden="true"></span>
+      <button id="t-right" type="button" aria-label="Steer right"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
+      <button id="t-down" type="button" aria-label="Brake or reverse"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 43 23H32V44H16V23H5Z"/></svg></button>
     </div>
     <div id="touch-center">
-      <button class="tbtn" id="t-hand" type="button" aria-label="Handbrake">✋</button>
+      <button class="tbtn" id="t-hand" type="button" aria-label="Handbrake">BRAKE</button>
       <div id="touch-extra">
         <button class="tbtn utility" id="t-reset" type="button" aria-label="Reset kart">⟲</button>
         <button class="tbtn utility" id="t-camera" type="button" aria-label="Change camera">📷</button>
       </div>
-    </div>
-    <div class="touch-cluster" id="touch-pedals" aria-label="Pedal controls">
-      <button class="tbtn pedal" id="t-down" type="button" aria-label="Brake or reverse">▼<span>BRAKE</span></button>
-      <button class="tbtn pedal" id="t-up" type="button" aria-label="Accelerate">▲<span>GAS</span></button>
     </div>
   </div>
 </div>
@@ -248,6 +285,8 @@
   <script src="src/12-landmarks.js"></script>
   <script src="src/13-modes.js"></script>
   <script src="src/14-touch.js"></script>
+  <script src="src/15-race.js"></script>
+  <script src="src/16-geese.js"></script>
   <script src="streamlit-bridge.js"></script>
   <script src="src/11-boot.js"></script>
 </body>

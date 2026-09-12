@@ -1,80 +1,38 @@
-/* 14-touch.js
-   On-screen driving pad for phones and tablets.
-
-   Part of Valrose Kart. Loaded as a plain script in the order set by
-   index.html, so everything shares one global scope — no bundler needed.
-   Runs after 06-kart.js (keys, resetKart) and 07-camera.js (el, camMode).
-
-   Each pad button just adds/removes the same key string that keydown/keyup
-   push into `keys`, so 06-kart.js's step() needs no changes at all — the
-   pad is indistinguishable from a held key. */
-
-(function () {
-  // Guarded rather than assumed: the node test harness runs this file in a
-  // stub DOM with no matchMedia/navigator/document.body.
-  const coarse = (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) ||
-    (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
-  if (!coarse || !document.body) return;
-  document.body.classList.add("touch");
-
-  // Give phones/iPads the full screen to drive on: start with the settings
-  // panel collapsed (tap "+" to reopen it) instead of a ~200px-wide option
-  // list eating a chunk of a narrow screen before the driver has even moved.
-  const panel = el("panel"), toggle = el("hidepanel"), focusHint = el("focus-hint");
-  if (panel && toggle) setPanelCollapsed(true);
-  if (focusHint) focusHint.textContent = "Use the on-screen controls to drive";
-
-  // A tap back on the game also closes an open menu. This is useful on small
-  // screens and leaves the fixed × button as an always-visible alternative.
-  addEventListener("pointerdown", e => {
-    if (panel && !panel.classList.contains("min") && !panel.contains(e.target)) {
-      setPanelCollapsed(true);
-    }
-  }, { passive: true });
-
-  const setOrientationClass = () => {
-    document.body.classList.toggle("portrait", innerHeight > innerWidth);
-  };
-  setOrientationClass();
-  addEventListener("resize", setOrientationClass);
-  addEventListener("orientationchange", setOrientationClass);
-
-  // Holding a button fires pointerdown once; pointer capture keeps the hold
-  // reliable while the finger moves, and release/cancel always clears it.
-  function bindKey(id, key) {
-    const node = el(id);
-    if (!node) return;
-    const pointers = new Set();
-    const press = e => {
-      e.preventDefault();
-      pointers.add(e.pointerId);
-      node.classList.add("on");
-      node.setAttribute("aria-pressed", "true");
-      keys.add(key);
-      node.setPointerCapture?.(e.pointerId);
+/* The four-arrow phone pad mirrors keyboard driving and supports two fingers. */
+const touchReleases=[];
+function clearTouchControls(){for(const release of touchReleases)release();}
+(function(){
+  const coarse=(typeof matchMedia==='function'&&matchMedia('(any-pointer: coarse)').matches)||
+    (typeof navigator!=='undefined'&&navigator.maxTouchPoints>0);
+  if(!coarse||!document.body)return;
+  document.body.classList.add('touch');
+  setPanelCollapsed(true);
+  el('focus-hint').textContent='Use the four-arrow pad to drive';
+  addEventListener('pointerdown',e=>{
+    const panel=el('panel');
+    if(!panel.classList.contains('min')&&!panel.contains(e.target))setPanelCollapsed(true);
+  },{passive:true});
+  const orient=()=>document.body.classList.toggle('portrait',innerHeight>innerWidth);
+  orient();addEventListener('resize',()=>{clearTouchControls();orient();});
+  addEventListener('orientationchange',()=>{clearTouchControls();orient();});
+  addEventListener('blur',clearTouchControls);
+  document.addEventListener?.('visibilitychange',()=>{if(document.hidden)clearTouchControls();});
+  function bindKey(id,key){
+    const node=el(id),pointers=new Set();
+    const clear=()=>{pointers.clear();node.classList.remove('on');node.setAttribute('aria-pressed','false');keys.delete(key);};
+    touchReleases.push(clear);clear();
+    node.addEventListener('pointerdown',e=>{
+      e.preventDefault();if(race.finished||mapOpen)return;
+      pointers.add(e.pointerId);node.classList.add('on');node.setAttribute('aria-pressed','true');
+      keys.add(key);node.setPointerCapture?.(e.pointerId);
+    });
+    const release=e=>{
+      e.preventDefault();pointers.delete(e.pointerId);if(!pointers.size)clear();
     };
-    const release = e => {
-      e.preventDefault();
-      pointers.delete(e.pointerId);
-      if (pointers.size) return;
-      node.classList.remove("on");
-      node.setAttribute("aria-pressed", "false");
-      keys.delete(key);
-    };
-    node.setAttribute("aria-pressed", "false");
-    node.addEventListener("pointerdown", press);
-    node.addEventListener("pointerup", release);
-    node.addEventListener("pointercancel", release);
-    node.addEventListener("lostpointercapture", release);
-    node.addEventListener("contextmenu", e => e.preventDefault());
+    for(const event of ['pointerup','pointercancel','lostpointercapture'])node.addEventListener(event,release);
+    node.addEventListener('contextmenu',e=>e.preventDefault());
   }
-
-  bindKey("t-up", "arrowup");
-  bindKey("t-down", "arrowdown");
-  bindKey("t-left", "arrowleft");
-  bindKey("t-right", "arrowright");
-  bindKey("t-hand", " ");
-
-  el("t-reset")?.addEventListener("pointerup", e => { e.preventDefault(); resetKart(); });
-  el("t-camera")?.addEventListener("pointerup", e => { e.preventDefault(); camMode = (camMode + 1) % 3; });
+  for(const [id,key] of [['t-up','arrowup'],['t-down','arrowdown'],['t-left','arrowleft'],['t-right','arrowright'],['t-hand',' ']])bindKey(id,key);
+  el('t-reset').addEventListener('click',e=>{e.preventDefault();resetKart();});
+  el('t-camera').addEventListener('click',e=>{e.preventDefault();camMode=(camMode+1)%3;});
 })();

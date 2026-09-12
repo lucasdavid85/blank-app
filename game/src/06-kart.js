@@ -15,7 +15,8 @@ const KART = {
 const G = 9.81;
 
 const kart = { x: 0, y: 0, a: 0, vx: 0, vy: 0, offroad: false, slip: 0, grade: 0, alt: 0 };
-const race = { s: 0, progress: 0, lap: 1, t: 0, best: null, running: false };
+const race = { s: 0, progress: 0, lap: 1, t: 0, best: null, running: false,
+  finished: false, results: [], lastTick: null, course: '' };
 const skids = [];
 
 function resetKart() {
@@ -25,9 +26,13 @@ function resetKart() {
     kart.a = Math.atan2(L[1][0]-L[0][0], L[1][1]-L[0][1]);
   } else { kart.x = kart.y = 0; kart.a = 0; }
   if(gate.group){[kart.x,kart.y]=gateSpawn();kart.a=Math.atan2(...gate.forward);resetGate();}
-  kart.vx = kart.vy = 0; kart.slip = 0;
+  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false;
   race.s = onLine(kart.x, kart.y).s;
-  race.progress = 0; race.lap = 1; race.t = 0; race.running = false;
+  const course = JSON.stringify(world.line);
+  if (race.course !== course) { race.best = null; race.results.length = 0; race.course = course; }
+  race.progress = 0; race.lap = race.results.length + 1; race.t = 0;
+  race.running = false; race.finished = false; race.lastTick = null;
+  closeFinish(); clearTouchControls(); keys.clear(); resetGeese();
   while (skidGroup.children.length) {
     const m = skidGroup.children.pop(); m.geometry.dispose(); skidGroup.remove(m);
   }
@@ -49,7 +54,7 @@ addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
 const held = (...k) => k.some(x => keys.has(x));
 
 function step(dt) {
-  if (mapOpen) return;
+  if (mapOpen || race.finished) return;
   const visiting=playMode==='visit';
   const throttle = held("arrowup","w","z");
   const braking  = held("arrowdown","s");
@@ -62,15 +67,15 @@ function step(dt) {
   let lat = kart.vx*rx + kart.vy*ry;
 
   const near = onLine(kart.x, kart.y, race.running ? race.s : null);
-  kart.offroad = near.dist > TRACK_W;
+  kart.offroad = visiting && near.dist > TRACK_W;
   // The entrance sits just outside the mapped racing surface. Treat the short
   // gate-to-circuit approach as a launch lane instead of applying the off-road
   // limiter there; otherwise the kart reaches the gate at only 29 km/h.
   const launching = !visiting && !race.running;
-  const vmax = launching ? KART.maxSpeed : (kart.offroad ? KART.maxSpeedOff : KART.maxSpeed);
+  const vmax = KART.maxSpeed;
 
   const launch = launching ? KART.launchBoost : 1;
-  if (throttle) fwd += KART.engine * launch * dt * (!visiting && kart.offroad && !launching ? 0.45 : 1);
+  if (throttle) fwd += KART.engine * launch * dt;
   if (braking)  fwd -= (fwd > 0 ? KART.brake : KART.engine * 0.5) * dt;
   if (!visiting && fwd >  vmax) fwd = vmax;
   if (!visiting && fwd < -vmax * 0.4) fwd = -vmax * 0.4;
@@ -92,7 +97,7 @@ function step(dt) {
 
   const grip = hand ? KART.gripSlide : (kart.offroad ? 0.94 : KART.gripOn);
   lat *= Math.pow(grip, dt*60);
-  fwd *= Math.pow(!visiting && kart.offroad && !launching ? KART.dragOff : KART.drag, dt*60);
+  fwd *= Math.pow(KART.drag, dt*60);
   if (hand) fwd *= Math.pow(0.985, dt*60);
 
   kart.slip = Math.abs(lat);
@@ -135,22 +140,24 @@ function step(dt) {
     kart.vx *= 0.985; kart.vy *= 0.985;
   }
 
+  if (!visiting) constrainToCircuit();
+  updateGeese(dt);
   kart.alt = heightAt(kart.x, kart.y);
 
-  const s = near.s;
+  const after = onLine(kart.x, kart.y, race.running ? race.s : null);
+  const s = after.s;
   let ds = s - race.s;
   if (ds >  world.length/2) ds -= world.length;
   if (ds < -world.length/2) ds += world.length;
   race.s = s;
-  if (!visiting && near.dist < TRACK_W && !race.running && Math.hypot(kart.vx, kart.vy) > 0.5) race.running = true;
+  if (!visiting && after.dist < TRACK_W && !race.running && Math.hypot(kart.vx, kart.vy) > 0.5) {
+    race.running = true; race.lastTick = performance.now(); ds = 0;
+    el('gate-status').textContent = 'Follow the circuit · dodge the geese!';
+  }
   if (!visiting && race.running) {
-    race.progress += ds; race.t += dt;
-    if (race.progress >= world.length) {
-      race.progress -= world.length;
-      if (race.best === null || race.t < race.best) race.best = race.t;
-      race.t = 0; race.lap++;
-    }
-    if (race.progress < 0) race.progress += world.length;
+    // Keep signed progress: reversing across the start must not count as a lap.
+    race.progress += ds;
+    if (race.progress >= world.length) finishRace();
   }
 
   if (kart.slip > 3.2 && Math.hypot(kart.vx, kart.vy) > 4) addSkid();

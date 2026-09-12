@@ -93,6 +93,8 @@ function buildTerrain() {
 /* ---- racing surface, draped on the relief ---- */
 function buildTrack() {
   if (trackMesh) { scene.remove(trackMesh); trackMesh.geometry.dispose(); }
+  buildRaceBarriers();
+  buildGeese();
   const L = world.line;
   if (L.length < 3) return;
 

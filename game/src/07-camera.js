@@ -44,7 +44,7 @@ function updateCamera(dt) {
 }
 
 const el = id => document.getElementById(id);
-const fmt = t => { const m = Math.floor(t/60), s = t - m*60;
+const fmt = t => { const cs = Math.max(0, Math.round(t*100)), m = Math.floor(cs/6000), s = (cs%6000)/100;
   return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2); };
 
 function hud() {
@@ -62,6 +62,7 @@ let last=performance.now(),acc=0,lastHUD=0,lastMini=0,lastDiscovery=0,fpsStart=0
 const DT=1/120,MAX_STEPS=8;
 function frame(now){
  requestAnimationFrame(frame);
+ tickRaceClock(now);
  if(document.hidden){last=now;acc=0;return;}
  const dt=Math.min(MAX_STEPS*DT,Math.max(0,(now-last)/1000));last=now;acc+=dt;
  let steps=0;while(acc>=DT&&steps<MAX_STEPS){step(DT);acc-=DT;steps++;}if(steps===MAX_STEPS)acc=0;

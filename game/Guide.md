@@ -4,11 +4,15 @@ Open index.html in the extracted folder, or open the separate ValroseCampus.html
 
 ## Two modes
 
-Race uses the circuit supplied in your draft. Acceleration is boosted on the short launch to the entrance gate; break through it and follow the racing surface. The clock begins when you reach the circuit. R restores the kart and gate. Restore your circuit restores the original route after an edit.
+Race uses the circuit supplied in your draft. Acceleration is boosted on the short launch to the entrance gate; break through it and follow the racing surface. Red-and-white guardrails keep the kart on the racing surface and redirect it along the edge without reducing its speed. The clock begins when you reach the circuit and measures elapsed time, excluding hidden tabs and map editing. Completing a tour opens “You finished it in …” with your time in seconds or minutes and a scoreboard of the five fastest laps in this page session. Race again starts another tour; Explore campus switches to visit mode. Reloading clears scores, and changing the circuit clears the old course's scores. R restores the kart and gate. Restore your circuit restores the original route after an edit.
 
-Visit offers free driving without a programmed speed limit, including away from the circuit. Engine power and drag still affect acceleration. Choose a destination to see its introduction, direct distance and blue map marker. Approach it to record a discovery. The distance is a straight line, not route guidance. Buildings and water still block the car. The race timer and racing surface are hidden in this mode.
+Visit offers free driving without a programmed speed limit, including away from the circuit. Engine power and drag still affect acceleration. Settings and destination panels are hidden so the view remains clear on phones. Building signs and the minimap remain available. The small Race/Visit switch lets you return to racing. Buildings and water still block the car. The race timer and racing surface are hidden in this mode.
 
-Drive with the arrow keys or WASD. Space applies the handbrake. C changes camera. M opens the map editor. Phones and tablets automatically display two-thumb controls, with steering on the left and accelerator and brake pedals on the right. The settings panel starts as a compact + button on every device to leave room for driving.
+Drive with the arrow keys or WASD. Space applies the handbrake. C changes camera. M opens the map editor. Phones and tablets automatically display a circular four-arrow pad inspired by the supplied reference: up accelerates, down brakes or reverses, and left/right steer. Hold up and a steering arrow together to turn while accelerating. The right-hand buttons apply the handbrake, reset the kart or change the camera. Touch release, cancellation, screen rotation and reset clear held inputs. In race mode, the settings panel starts as a compact + button.
+
+## Geese
+
+Five stylized white geese patrol the circuit edges in both modes. An amber ground ring and a Honk warning signal an incoming attack while their wings flap. Their charge direction is fixed during the warning, so you can steer or brake to avoid their path. Contact causes a brief slowdown, followed by immunity against repeated bumps from the same attack. Geese retreat to their starting positions and reset with the kart.
 
 ## Geographic corrections
 
