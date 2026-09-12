@@ -11,6 +11,5 @@ ingest(placeholderData());
 initThree();
 rebuildAll();
 setMode('race');
-camPos.set(kart.x, heightAt(kart.x, kart.y) + 6, -kart.y + 12);
-camAim.set(kart.x, heightAt(kart.x, kart.y), -kart.y);
+resetCameraView();
 requestAnimationFrame(frame);

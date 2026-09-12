@@ -18,18 +18,19 @@ function circuitContact(x, y) {
 }
 
 function constrainToCircuit() {
+  const wasTouching=kart.railContact;kart.railContact=false;
   if (world.line.length < 3) return;
   const c = circuitContact(kart.x, kart.y), limit = TRACK_W - KART.radius;
   if (c.dist <= limit) return;
+  kart.railContact=true;
   const nx = (kart.x-c.x)/c.dist, ny = (kart.y-c.y)/c.dist;
   kart.x = c.x + nx*limit; kart.y = c.y + ny*limit;
-  // Redirect outward motion along the rail while retaining its speed.
-  if (kart.vx*nx+kart.vy*ny > 0) {
-    const speed = Math.hypot(kart.vx,kart.vy);
-    const direction = Math.sign(kart.vx*c.tx+kart.vy*c.ty) ||
-      Math.sign(Math.sin(kart.a)*c.tx+Math.cos(kart.a)*c.ty) || 1;
-    kart.vx = c.tx*speed*direction; kart.vy = c.ty*speed*direction;
-    kart.a = Math.atan2(c.tx*direction,c.ty*direction);
+  // A rail blocks outward motion. Steering and heading remain entirely manual.
+  const outward = kart.vx*nx+kart.vy*ny;
+  if (outward > 0) { kart.vx -= outward*nx; kart.vy -= outward*ny; }
+  if(outward>1){
+    cancelCenterBoost();
+    if(!wasTouching){race.railHits++;emitRailSparks(kart.x,kart.y,nx,ny);}
   }
   kart.offroad = false;
 }
@@ -134,12 +135,14 @@ function finishRace() {
   if(playMode!=='race'||race.finished)return;
   tickRaceClock(performance.now());
   race.finished=true;race.running=false;race.lastTick=null;
-  const result={lap:race.lap,time:race.t,name:driverName()};race.currentResult=result;race.results.push(result);
+  const result={lap:race.lap,time:race.t,name:driverName(),boosts:race.boosts,railHits:race.railHits};race.currentResult=result;race.results.push(result);
   const record=race.best===null||race.t<race.best;
   if(record)race.best=race.t;
   clearTouchControls();keys.clear();kart.vx=kart.vy=0;kart.boosting=false;
   el('finish-time').textContent='You finished it in '+finishDuration(race.t)+'!';
   el('finish-best').textContent=(record?'New best time! · ':'Best time · ')+fmt(race.best);
+  el('finish-details').textContent=result.boosts+' boost'+(result.boosts===1?'':'s')+' · '+result.railHits+' rail contact'+(result.railHits===1?'':'s');
+  raceStart.goUntil=0;el('race-countdown').hidden=true;
   renderScores();
   queueResultPicture();
   el('finish').hidden=false;document.body?.classList.add('race-finished');

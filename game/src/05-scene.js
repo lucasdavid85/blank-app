@@ -16,10 +16,10 @@ function initThree() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xd2d7d1);
-  scene.fog = new THREE.Fog(0xd2d7d1, 240, 640);
+  scene.background = new THREE.Color(0xc8dfea);
+  scene.fog = new THREE.Fog(0xc8dfea, 400, 1200);
 
-  camera = new THREE.PerspectiveCamera(62, 1, 0.5, 2000);
+  camera = new THREE.PerspectiveCamera(62, 1, 0.2, 2000);
 
   scene.add(new THREE.HemisphereLight(0xdfe6e2, 0x6a6248, 0.9));
   sun = new THREE.DirectionalLight(0xffe9c4, 0.9);
@@ -36,7 +36,7 @@ function initThree() {
   skidGroup = new THREE.Group();
   scene.add(buildingGroup, treeGroup, pathGroup, skidGroup);
 
-  buildKart();
+  buildKart();buildRaceEffects();
   onResize();
   addEventListener("resize", onResize);
 }
@@ -49,15 +49,39 @@ function onResize() {
 }
 
 /* ---- terrain ---- */
+function buildGrassTexture() {
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
+  const ctx=canvas.getContext('2d');let seed=14637;
+  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  ctx.fillStyle='#849e5d';ctx.fillRect(0,0,512,512);
+  const greens=['#6c884c','#90a86a','#9ab476','#789856','#b3bb80','#526e3e'];
+  for(let i=0;i<18000;i++){
+    ctx.fillStyle=greens[Math.floor(random()*greens.length)];
+    ctx.globalAlpha=.2+random()*.35;
+    ctx.fillRect(random()*512,random()*512,1+random()*3,1+random()*2);
+  }
+  ctx.globalAlpha=.35;ctx.lineWidth=.7;
+  for(let i=0;i<6000;i++){
+    const x=random()*512,y=random()*512;
+    ctx.strokeStyle=greens[Math.floor(random()*greens.length)];ctx.beginPath();
+    ctx.moveTo(x,y);ctx.lineTo(x+(random()-.5)*3,y-2-random()*5);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(DEM.size/14,DEM.size/14);
+  texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||1);
+  return texture;
+}
 function buildTerrain() {
-  if (terrainMesh) { scene.remove(terrainMesh); terrainMesh.geometry.dispose(); }
+  if (terrainMesh) clearGroup(terrainMesh);
   const n = DEM.n, step = DEM.size / n, w = n + 1;
   const pos = new Float32Array(w * w * 3);
   const col = new Float32Array(w * w * 3);
-  // Parc Valrose in September: straw and bare earth on the open slopes,
-  // olive scrub where it is rough, real green only in the shaded hollows.
-  const straw = new THREE.Color(0xa79a62), scrub = new THREE.Color(0x6d7a49),
-        shade = new THREE.Color(0x4a6440), earth = new THREE.Color(0x8d7c5d);
+  // Grass detail comes from a repeating local texture; vertex tints describe
+  // broad lawn variation and less vegetated steep banks without flattening relief.
+  const grass = new THREE.Color(0xe1e9d1), shade = new THREE.Color(0xbacda8),
+        earth = new THREE.Color(0xcfb996);
+  const uv = new Float32Array(w*w*2);
 
   for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
     const k = j * w + i, x = -HALF + i * step, y = -HALF + j * step;
@@ -66,26 +90,25 @@ function buildTerrain() {
     pos[k*3] = x; pos[k*3+1] = h; pos[k*3+2] = -y;
     const [gx, gy] = gradientAt(x, y, step);
     const slope = Math.min(1, Math.hypot(gx, gy) / 0.6);
-    const t = (h - DEM.min) / Math.max(1, DEM.max - DEM.min);
-    const n = (Math.sin(x*0.21 + y*0.13) + Math.sin(x*0.07 - y*0.19) + Math.sin(y*0.31)) / 3;
-    const c = shade.clone()
-      .lerp(straw, Math.min(1, 0.35 + t*0.75 + n*0.22))
-      .lerp(scrub, 0.35 + n*0.2)
-      .lerp(earth, Math.max(0, slope - 0.45) * 0.9);
+    const variation = (Math.sin(x*.027+y*.013)+Math.sin(x*.061-y*.047))/2;
+    const c = grass.clone().lerp(shade,.22+variation*.15)
+      .lerp(earth,Math.max(0,slope-.65)*.8);
+    uv[k*2]=i/n;uv[k*2+1]=j/n;
     col[k*3] = c.r; col[k*3+1] = c.g; col[k*3+2] = c.b;
   }
   const idx = [];
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     const a = j*w + i, b = a + 1, c = a + w, d = c + 1;
-    idx.push(a, c, b, b, c, d);
+    idx.push(a, b, c, b, d, c);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   g.setIndex(idx);
   g.computeVertexNormals();
   terrainMesh = new THREE.Mesh(g,
-    new THREE.MeshLambertMaterial({ vertexColors: true }));
+    new THREE.MeshLambertMaterial({ vertexColors: true, map: buildGrassTexture(), side: THREE.FrontSide }));
   terrainMesh.receiveShadow = true;
   scene.add(terrainMesh);
 }
@@ -136,7 +159,7 @@ function buildTrack() {
   trackMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({
     vertexColors: true, side: THREE.DoubleSide }));
   trackMesh.receiveShadow = true;
-  trackMesh.add(buildBoostLine(samples));
+  trackMesh.add(buildBoostLine(samples));trackMesh.add(buildRaceDetails());
   scene.add(trackMesh);
   if(typeof playMode!=='undefined')trackMesh.visible=playMode==='race';
 }
@@ -317,10 +340,19 @@ function buildKart() {
   const wheelG = new THREE.CylinderGeometry(0.42, 0.42, 0.36, 12);
   wheelG.rotateZ(Math.PI / 2);
   const wheelM = new THREE.MeshLambertMaterial({ color: 0x1c1c1a });
+  kartObj.userData.wheels=[];
   for (const [wx, wz] of [[-0.85,-1.0],[0.85,-1.0],[-0.9,1.05],[0.9,1.05]]) {
-    const w = new THREE.Mesh(wheelG, wheelM);
-    w.position.set(wx, 0.42, wz); w.castShadow = true;
-    kartObj.add(w);
+    const pivot=new THREE.Group();pivot.position.set(wx,.42,wz);kartObj.add(pivot);
+    const w = new THREE.Mesh(wheelG, wheelM);w.castShadow = true;pivot.add(w);
+    const hub=new THREE.Mesh(new THREE.BoxGeometry(.075,.55,.08),new THREE.MeshLambertMaterial({color:0xd1c49d}));
+    hub.position.x=Math.sign(wx)*.19;w.add(hub);
+    kartObj.userData.wheels.push({pivot,mesh:w,front:wz<0});
+  }
+  kartObj.userData.boostFlames=[];
+  for(const x of [-.45,.45]){
+    const flame=new THREE.Mesh(new THREE.ConeGeometry(.18,1.25,8),new THREE.MeshBasicMaterial({color:0xadef80,transparent:true,opacity:.85,depthWrite:false}));
+    flame.rotation.x=Math.PI/2;flame.position.set(x,.55,2);flame.visible=false;
+    kartObj.add(flame);kartObj.userData.boostFlames.push(flame);
   }
   kartObj.add(body, nose, seat, helmet);
   scene.add(kartObj);

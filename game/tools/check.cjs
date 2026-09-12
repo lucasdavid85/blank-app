@@ -36,7 +36,7 @@ landmarkGroup.traverse(m=>{if(m.geometry&&!Array.from(m.geometry.attributes.posi
 resetKart();const spawn=gateSpawn();if(Math.hypot(kart.x-spawn[0],kart.y-spawn[1])>.01)throw Error('Entrance spawn failed');
 const f=gate.forward,qg=gate.position;let previous=[qg[0]-f[0]*2,qg[1]-f[1]*2];kart.x=qg[0];kart.y=qg[1];kart.vx=f[0];kart.vy=f[1];updateGate(1/120,previous);if(gate.broken)throw Error('Slow impact should stop at gate');
 kart.x=qg[0]+f[0]*.1;kart.y=qg[1]+f[1]*.1;kart.vx=f[0]*10;kart.vy=f[1]*10;updateGate(1/120,previous);if(!gate.broken)throw Error('Fast impact did not break gate');
-resetKart();mapOpen=false;keys.add('arrowup');for(let i=0;i<600&&!gate.broken;i++)step(1/120);keys.clear();if(!gate.broken)throw Error('Gate cannot be broken by driving from spawn');
+resetKart();startRaceCountdown();advanceTime(3100);updateRacePresentation(performance.now());mapOpen=false;keys.add('arrowup');for(let i=0;i<600&&!gate.broken;i++)step(1/120);keys.clear();if(!gate.broken)throw Error('Gate cannot be broken by driving from spawn');
 if(Math.hypot(kart.vx,kart.vy)<KART.launchSpeed*.9)throw Error('Race launch did not reach full speed through the gate');
 resetKart();if(gate.broken||gate.pieces.some(p=>p.mesh.position.distanceTo(p.home)>.001))throw Error('Gate reset failed');
 focusFeature('building',0);el('feature-name').value='My laboratory';el('feature-note').value='Check the west entrance';el('feature-apply').onclick();ingest(exportFeatures());if(world.buildings[0].name!=='My laboratory'||world.buildings[0].properties.annotation!=='Check the west entrance')throw Error('Annotation did not persist');
@@ -107,27 +107,30 @@ world.line=[[0,0],[0,100],[100,100],[100,0],[0,0]];measureLine();
 world.buildings=[];world.water=[];DEM.h=new Float32Array(DEM.h.length).fill(42);demRange();
 gate.group=null;geese=[];setMode('race');
 
-// A side impact stays on the road and retains its full velocity magnitude.
+// A rail impact blocks outward velocity without correcting the driver's heading.
 race.running=true;race.s=50;kart.x=10;kart.y=50;kart.vx=15;kart.vy=5;kart.a=1;
-const impactSpeed=Math.hypot(kart.vx,kart.vy);constrainToCircuit();
+const impactHeading=kart.a;constrainToCircuit();
 if(Math.abs(kart.x-(TRACK_W-KART.radius))>1e-8||Math.abs(kart.y-50)>1e-8)throw Error('Barrier did not keep the kart inside the track');
-if(Math.abs(Math.hypot(kart.vx,kart.vy)-impactSpeed)>1e-8||Math.abs(kart.vx)>1e-8)throw Error('Barrier lost speed or failed to redirect motion');
+if(kart.a!==impactHeading||Math.abs(kart.vx)>1e-8||Math.abs(kart.vy-5)>1e-8)throw Error('Barrier corrected heading or added tangential motion');
 buildRaceBarriers();
 if(barrierGroup.children.length!==2||!barrierGroup.children[0].isInstancedMesh)throw Error('Race barriers missing');
 for(const mesh of barrierGroup.children)if(!Array.from(mesh.instanceMatrix.array).every(Number.isFinite))throw Error('Invalid barrier geometry');
 
 
-// Race and visit retain the same speed away from the center boost.
+// Race limits are restored while visit remains uncapped.
 function testDrive(mode,x,speed,options={}){
  setMode(mode);race.running=true;race.s=50;race.progress=0;
  kart.x=x;kart.y=50;kart.a=options.heading||0;kart.vx=0;kart.vy=speed;
+ if(options.boost)kart.boostTime=KART.boostSeconds;
  if(options.throttle)keys.add('arrowup');if(options.brake)keys.add('arrowdown');if(options.hand)keys.add(' ');
- step(1/120);return {speed:Math.hypot(kart.vx,kart.vy),boosting:kart.boosting};
+ step(1/120);return {speed:Math.hypot(kart.vx,kart.vy),boosting:kart.boosting,onBoostLine:kart.onBoostLine};
 }
 const raceFast=testDrive('race',1.6,100),visitFast=testDrive('visit',1.6,100);
-if(raceFast.speed<90||Math.abs(raceFast.speed-visitFast.speed)>1e-8)throw Error('Race speed was capped or differs from visit mode');
+if(raceFast.speed>KART.maxSpeed||raceFast.speed<19||visitFast.speed<90)throw Error('Race speed limit was not restored or visit was capped');
+const cappedBoost=testDrive('race',0,100,{throttle:true,boost:true});
+if(!cappedBoost.boosting||cappedBoost.speed>KART.maxBoostSpeed||cappedBoost.speed<27)throw Error('Center boost speed cap failed');
 const centerDrive=testDrive('race',0,10,{throttle:true}),side=testDrive('race',1.6,10,{throttle:true});
-if(!centerDrive.boosting||side.boosting||centerDrive.speed<=side.speed)throw Error('Center line did not give an exclusive acceleration boost');
+if(!centerDrive.onBoostLine||centerDrive.boosting||side.onBoostLine||side.boosting||centerDrive.speed<=side.speed)throw Error('Center line did not give an exclusive acceleration boost');
 if(testDrive('race',0,10,{throttle:true,brake:true}).boosting)throw Error('Boost applied while braking');
 if(testDrive('race',0,10,{throttle:true,hand:true}).boosting)throw Error('Boost applied while handbraking');
 if(testDrive('race',0,-10,{throttle:true,heading:Math.PI}).boosting)throw Error('Boost applied against the circuit direction');
@@ -137,7 +140,45 @@ if(!trackMesh.children.some(g=>g.name==='center-boost'&&g.children.length===3))t
 trackMesh.traverse(m=>{if(m.geometry&&!Array.from(m.geometry.attributes.position.array).every(Number.isFinite))throw Error('Invalid center line geometry');});
 const railPositions=barrierGroup.children[0].geometry.attributes.position.array;
 if(Math.max(...Array.from(railPositions).filter((v,i)=>i%3===1))>.1)throw Error('Rails are still tall blocks');
-console.log('Passed: unlimited race speed, matching visit motion, center acceleration boost and slim rails');
+console.log('Passed: restored race speed, capped center boost, uncapped visit and slim rails');
+
+// Holding the center line earns a timed boost; isolate driving from goose attacks.
+geese=[];setMode('race');race.running=true;race.s=5;kart.x=0;kart.y=5;kart.a=0;kart.vx=0;kart.vy=10;keys.add('arrowup');
+for(let i=0;i<239;i++)step(1/120);
+if(kart.boosting||kart.boostCharge<.95||race.boosts!==0)throw Error('Boost fired before the center hold completed');
+step(1/120);
+if(!kart.boosting||race.boosts!==1)throw Error('Center hold did not earn a boost');
+for(let i=0;i<45;i++)step(1/120);
+if(Math.hypot(kart.vx,kart.vy)<27||Math.hypot(kart.vx,kart.vy)>KART.maxBoostSpeed)throw Error('Earned boost did not reach the capped speed: '+JSON.stringify({speed:Math.hypot(kart.vx,kart.vy),boost:kart.boostTime,x:kart.x,y:kart.y,steering:kart.steering,keys:[...keys]}));
+kart.x=1.6;step(1/120);
+if(!kart.boosting||kart.onBoostLine)throw Error('Earned burst did not carry off the center line');
+keys.add('arrowdown');step(1/120);
+if(kart.boosting||kart.boostCharge||Math.hypot(kart.vx,kart.vy)>KART.maxSpeed)throw Error('Braking did not cancel the burst');
+keys.clear();kart.boostTime=.01;kart.boosting=true;updateCenterBoost(.02,false,true);
+if(kart.boosting||kart.boostTime)throw Error('Boost did not expire');
+kart.boostCharge=.5;updateCenterBoost(.2,false,true);
+if(kart.boostCharge>=.5)throw Error('Leaving the line did not lose unearned charge');
+kart.vx=kart.vy=0;kart.boostCharge=0;updateCenterBoost(3,true,true);
+if(kart.boosting||kart.boostCharge)throw Error('Standing still farmed a boost');
+kart.vx=20;kart.vy=0;kart.boostTime=2;kart.boosting=true;kart.x=10;kart.y=50;kart.railContact=false;
+const railHitsBefore=race.railHits,railHeadingBefore=kart.a;constrainToCircuit();
+if(kart.boosting||race.railHits!==railHitsBefore+1||kart.a!==railHeadingBefore)throw Error('Rail impact failed to cancel boost, record contact, or preserve heading');
+
+// Heading stays under the driver, including while the boost is active.
+setMode('race');race.running=true;race.s=20;kart.x=0;kart.y=20;kart.a=.2;
+kart.vx=Math.sin(.2)*10;kart.vy=Math.cos(.2)*10;kart.boostTime=2;keys.add('arrowup');
+for(let i=0;i<12;i++)step(1/120);
+if(kart.a!==.2)throw Error('Race or boost corrected the driver heading');
+setMode('race');race.running=true;race.s=20;kart.x=0;kart.y=20;kart.a=0;kart.vx=0;kart.vy=10;
+keys.add('arrowup');keys.add('arrowright');step(1/120);
+if(kart.a<=0||kart.steering<=0||kart.steering>=1)throw Error('Manual steering did not respond smoothly');
+keys.delete('arrowright');for(let i=0;i<120;i++)step(1/120);
+const releasedHeading=kart.a;for(let i=0;i<12;i++)step(1/120);
+if(kart.a!==releasedHeading)throw Error('Released steering continued to alter heading');
+setMode('race');buildTrack();
+if(!trackMesh.children.some(g=>g.name==='race-details'&&g.children[0].geometry.index.count>48))throw Error('Kerbs or chequered finish paint missing');
+console.log('Passed: center hold, earned boost burst and expiry, brake/contact cancellation, no boost farming and smooth manual steering');
+
 race.running=true;
 
 // The clock measures actual elapsed time, including a slow frame.
@@ -212,7 +253,7 @@ resetGeese();
 gooseGroup.traverse(m=>{if(m.geometry&&!Array.from(m.geometry.attributes.position.array).every(Number.isFinite))throw Error('Invalid goose geometry');});
 
 world.line=savedLine;world.buildings=savedBuildings;world.water=savedWater;DEM.h=savedTerrain;gate.group=savedGateGroup;geese=savedGeese;measureLine();demRange();setMode('race');
-console.log('Passed: barrier speed and geometry, elapsed clock, finish scoreboard, replay and reverse crossing');
+console.log('Passed: manual heading at rails, barrier geometry, elapsed clock, finish scoreboard, replay and reverse crossing');
 console.log('Passed: menu-free visit, touch cancellation/reset, goose warning, dodge, contact and reset');
 `,ctx);
 
@@ -232,6 +273,120 @@ frame(performance.now()+16);
 THREE.WebGLRenderer=realRenderer;
 if(renderedFrames!==1)throw Error('Startup did not reach the frame renderer');
 console.log('Passed: default startup and one frame with a stub renderer (no WebGL visual check)');
+
+
+
+vm.runInContext(`
+setMode('race');
+if(el('race-intro').hidden||raceStart.phase!=='ready'||!document.body.classList.contains('race-ready'))throw Error('Race intro was not prepared');
+const countdownSpawn=[kart.x,kart.y];keys.add('arrowup');step(1/120);
+if(JSON.stringify(countdownSpawn)!==JSON.stringify([kart.x,kart.y])||race.running||race.t)throw Error('Kart moved or lap timer started before countdown');
+el('start-race').onclick();advanceTime(900);updateRacePresentation(performance.now());
+if(raceStart.phase!=='countdown'||el('race-countdown').textContent!=='3')throw Error('Countdown did not begin');
+document.hidden=true;advanceTime(5000);updateRacePresentation(performance.now());document.hidden=false;
+if(Math.abs(raceStart.remaining-2.1)>1e-8)throw Error('Countdown ran in a hidden tab');
+mapOpen=true;advanceTime(5000);updateRacePresentation(performance.now());mapOpen=false;
+if(Math.abs(raceStart.remaining-2.1)>1e-8)throw Error('Countdown ran in the map');
+advanceTime(1100);updateRacePresentation(performance.now());
+if(el('race-countdown').textContent!=='1')throw Error('Countdown display skipped its final second');
+advanceTime(1000);updateRacePresentation(performance.now());
+if(raceWaitingForStart()||el('race-countdown').textContent!=='GO!'||race.t)throw Error('GO did not release driving without timing the launch');
+step(1/120);if(Math.hypot(kart.vx,kart.vy)<=0)throw Error('Throttle did not drive after GO');
+advanceTime(1000);updateRacePresentation(performance.now());
+if(!el('race-countdown').hidden)throw Error('GO overlay did not clear');
+race.running=true;race.progress=world.length*.5;race.s=world.length*.5;
+kart.boostCharge=.5;updateRaceMeters();
+if(el('lap-progress-fill').style.width!=='50%'||el('boost-meter').attributes['aria-valuenow']!=='50')throw Error('Progress or boost HUD did not update');
+kart.boosting=true;kart.boostTime=2;kart.steering=.5;kart.vx=0;kart.vy=20;
+updateRacingVisuals(1/60,performance.now());
+if(kartObj.userData.boostFlames.some(m=>!m.visible)||!kartObj.userData.wheels.some(w=>w.front&&w.pivot.rotation.y<0)||!kart.wheelSpin)throw Error('Boost or wheel animation missing');
+emitRailSparks(kart.x,kart.y,1,0);updateRacingVisuals(1/60,performance.now());
+if(!railSparkMesh.visible||railSparkMesh.geometry.drawRange.count!==8)throw Error('Rail sparks missing');
+resetKart();
+if(railSparkMesh.visible||kart.boosting||kart.boostTime||kart.boostCharge||raceStart.phase!=='ready')throw Error('Replay left stale race effects or boost');
+setMode('visit');keys.add('arrowup');step(1/120);
+if(!el('race-intro').hidden||!el('race-countdown').hidden||!el('boost-card').hidden||raceWaitingForStart()||Math.hypot(kart.vx,kart.vy)<=0)throw Error('Visit was blocked by the racing presentation');
+setMode('race');
+console.log('Passed: ready screen, countdown freeze and pause, GO, progress HUD, boost/wheel/spark visuals, replay and immediate visit');
+`,ctx);
+
+vm.runInContext(`
+const terrainGeometry=terrainMesh.geometry,terrainPositions=terrainGeometry.attributes.position;
+const triangleIndex=terrainGeometry.index.array;
+for(let i=0;i<triangleIndex.length;i+=3){
+ const a=triangleIndex[i],b=triangleIndex[i+1],c=triangleIndex[i+2];
+ const upward=(terrainPositions.getZ(b)-terrainPositions.getZ(a))*(terrainPositions.getX(c)-terrainPositions.getX(a))-
+  (terrainPositions.getX(b)-terrainPositions.getX(a))*(terrainPositions.getZ(c)-terrainPositions.getZ(a));
+ if(upward<=0)throw Error('Terrain triangle faces downward and can disappear from above');
+}
+const grassMap=terrainMesh.material.map;
+if(!terrainGeometry.attributes.uv||terrainGeometry.attributes.uv.count!==terrainPositions.count||
+ !grassMap||grassMap.wrapS!==THREE.RepeatWrapping||grassMap.wrapT!==THREE.RepeatWrapping||
+ Math.abs(grassMap.repeat.x-DEM.size/14)>1e-8)throw Error('Terrain grass texture is not mapped in world scale');
+if(terrainMesh.material.side!==THREE.FrontSide)throw Error('Terrain winding fix was hidden by double-sided rendering');
+
+gate.group.updateMatrixWorld(true);
+const startSignNormal=gate.sign.getWorldDirection(new THREE.Vector3());
+const entranceFacing=new THREE.Vector3(-gate.forward[0],0,gate.forward[1]);
+if(startSignNormal.dot(entranceFacing)<.999||gate.sign.material.side!==THREE.FrontSide)throw Error('Entrance sign does not face the race start');
+const campusSign=gate.group.children.find(m=>m.userData.gateSign==='campus');
+if(!campusSign||campusSign.getWorldDirection(new THREE.Vector3()).dot(entranceFacing)>-.999)throw Error('Campus side of the gate sign is reversed');
+const signOrigin=gate.sign.getWorldPosition(new THREE.Vector3()),signSpawn=gateSpawn();
+if(startSignNormal.dot(new THREE.Vector3(signSpawn[0],signOrigin.y,-signSpawn[1]).sub(signOrigin))<=0)throw Error('Race spawn sees the mirrored back of the entrance sign');
+
+const previousCameraMode=camMode;
+for(const mode of [0,1,2]){
+ camMode=mode;
+ for(let s=0;s<world.length;s+=12){
+  const p=pointAtS(s),next=pointAtS(s+2);kart.x=p[0];kart.y=p[1];kart.a=Math.atan2(next[0]-p[0],next[1]-p[1]);
+  const driverHeading=kart.a;camPos.set(p[0],heightAt(...p)-3,-p[1]);camAim.set(p[0],heightAt(...p),-p[1]);
+  updateCamera(1/60);
+  if(camera.position.y<heightAt(camera.position.x,-camera.position.z)+(mode===2?.75:1.4)-1e-8)throw Error('Smoothed camera entered the hill');
+  if(kart.a!==driverHeading||![camera.position.x,camera.position.y,camera.position.z].every(Number.isFinite))throw Error('Camera changed heading or produced invalid coordinates');
+ }
+}
+const sampledHeightAt=heightAt;
+try{
+ heightAt=(x,y)=>42+12*Math.max(0,1-Math.abs(y+5)/2);
+ kart.x=kart.y=0;const ridgeCamera=new THREE.Vector3(0,46.6,10.5);
+ clearCameraSightline(ridgeCamera);
+ if(ridgeCamera.y<=46.6)throw Error('Camera did not rise above the intervening ridge');
+ for(let i=1;i<=12;i++){
+  const t=i/13,z=ridgeCamera.z*(1-t),sightHeight=ridgeCamera.y*(1-t)+43.3*t;
+  if(sightHeight<heightAt(0,-z)+.35-1e-8)throw Error('Terrain still blocks the sampled chase-camera sightline');
+ }
+}finally{heightAt=sampledHeightAt;camMode=previousCameraMode;resetKart();}
+globalThis.lapBenchmark={length:world.length,baseSpeed:KART.maxSpeed,boostSpeed:KART.maxBoostSpeed,
+ idealBaseSeconds:world.length/KART.maxSpeed,idealBoostSeconds:world.length/KART.maxBoostSpeed};
+console.log('Passed: upward terrain faces, mapped grass, readable gate orientation, camera ground and ridge clearance');
+console.log('Ideal full-centerline timing (constant speed, no braking or collisions):',lapBenchmark);
+`,ctx);
+
+
+vm.runInContext(`
+resetKart();startRaceCountdown();advanceTime(3100);updateRacePresentation(performance.now());
+let driveSteps=0,launchSteps=0;
+keys.add('arrowup');
+while(!race.running&&launchSteps++<1200){step(1/120);advanceTime(1000/120);tickRaceClock(performance.now());}
+keys.clear();
+if(!race.running)throw Error('Full-lap driving check could not reach the circuit');
+for(;driveSteps<30000&&!race.finished;driveSteps++){
+ const speed=Math.hypot(kart.vx,kart.vy),look=pointAtS(race.s+Math.max(3,speed*.4));
+ const desired=Math.atan2(look[0]-kart.x,look[1]-kart.y);
+ const error=Math.atan2(Math.sin(desired-kart.a),Math.cos(desired-kart.a));
+ const p0=pointAtS(race.s),p1=pointAtS(race.s+5),p2=pointAtS(race.s+13);
+ const first=Math.atan2(p1[0]-p0[0],p1[1]-p0[1]),second=Math.atan2(p2[0]-p1[0],p2[1]-p1[1]);
+ const turn=Math.abs(Math.atan2(Math.sin(second-first),Math.cos(second-first)));
+ const targetSpeed=Math.min(17,1.8/(turn/9+.06),Math.abs(error)>.65?6:20);
+ keys.clear();
+ if(error>.035)keys.add('arrowright');if(error<-.035)keys.add('arrowleft');
+ if(speed>targetSpeed+.6)keys.add('arrowdown');else keys.add('arrowup');
+ step(1/120);advanceTime(1000/120);tickRaceClock(performance.now());
+}
+if(!race.finished||race.railHits)throw Error('Full original-circuit lap did not finish cleanly using manual drive inputs');
+console.log('Passed: complete original-circuit lap using only throttle, brake and steering keys',{finished:race.finished,seconds:race.t,progress:race.progress,length:world.length,steps:driveSteps,railHits:race.railHits,boosts:race.boosts});
+resetKart();keys.clear();
+`,ctx);
 
 (async()=>{
   const downloads=[],urls=[],text=[];

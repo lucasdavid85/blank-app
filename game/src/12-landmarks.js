@@ -53,7 +53,9 @@ function buildGate(){
  const group=new THREE.Group();group.position.set(q[0],heightAt(...q),-q[1]);group.rotation.y=Math.atan2(gate.forward[0],-gate.forward[1]);landmarkGroup.add(group);gate.group=group;
  for(const x of [-4.2,4.2]){box(group,1.1,3.8,1.1,x,1.9,0,0xc9bea4);box(group,1.45,.3,1.45,x,3.95,0,0xe5d7b5);}
  for(const side of [-1,1]){const leaf=new THREE.Group();leaf.position.x=side*1.8;group.add(leaf);for(let j=0;j<9;j++)box(leaf,.08,2.8,.10,-1.6+j*.4,1.55,0,0x273d3b);for(const y of [.45,1.8,2.85])box(leaf,3.5,.1,.14,0,y,0,0x304847);gate.pieces.push({mesh:leaf,home:leaf.position.clone(),velocity:new THREE.Vector3()});}
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:labelTexture('UNIVERSITY · VALROSE'),side:THREE.DoubleSide}));sign.position.set(0,4.7,0);group.add(sign);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:labelTexture('UNIVERSITÉ · VALROSE'),side:THREE.FrontSide}));sign.position.set(0,4.7,-.06);sign.rotation.y=Math.PI;
+ sign.userData.gateSign='start';group.add(sign);gate.sign=sign;
+ const backSign=sign.clone();backSign.position.z=.06;backSign.rotation.set(0,0,0);backSign.userData.gateSign='campus';group.add(backSign);
 }
 function resetGate(){gate.broken=false;for(const p of gate.pieces){p.mesh.position.copy(p.home);p.mesh.rotation.set(0,0,0);p.velocity.set(0,0,0);}if(el('gate-status'))el('gate-status').textContent='Accelerate through the entrance gate';}
 function gateSpawn(){return[gate.position[0]-gate.forward[0]*10,gate.position[1]-gate.forward[1]*10];}
@@ -63,8 +65,8 @@ function updateGate(dt,previous){
  if(Math.abs(side)>gate.halfWidth+KART.radius||!(Math.abs(along)<KART.radius||along*before<0))return;
  const speed=Math.hypot(kart.vx,kart.vy);
  if(speed>=3){gate.broken=true;gate.pieces.forEach((p,i)=>p.velocity.set(i?2.5:-2.5,3,Math.min(10,speed*.6)));
-  // Give the entrance launch a minimum speed while preserving faster motion.
-  const boost=Math.max(speed,KART.launchSpeed),n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
+  // Restore the original capped launch speed when the entrance gate breaks.
+  const boost=KART.launchSpeed,n=speed||1;kart.vx=kart.vx/n*boost;kart.vy=kart.vy/n*boost;
   el('gate-status').textContent='Gate broken · explore the campus';}
  else{const sign=before<=0?-1:1;kart.x+=f[0]*(sign*(KART.radius+.06)-along);kart.y+=f[1]*(sign*(KART.radius+.06)-along);kart.vx=kart.vy=0;}
 }

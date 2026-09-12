@@ -5,7 +5,7 @@
   Three data layers, each replaceable at runtime:
 
     1. RELIEF   grid of heights over the campus bbox.
-                Default: a synthetic ramp. Real: IGN RGE ALTI (1 m lidar-derived),
+                Default: included IGN RGE ALTI ground samples (5 m spacing),
                 sampled through https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json
     2. FEATURES buildings, paths, ponds, trees, campus outline.
                 Default: traced from an OSM render of the campus (see CAMPUS below).
@@ -187,6 +187,72 @@
     #finish-best{margin:6px 0 10px}
     .finish-card td{padding:7px 0}
   }
+
+  /* Racing view inspired by the pace and clarity of The Race. */
+  :root{--race-accent:#f6cc57}
+  #race-intro{position:fixed;z-index:35;inset:0;display:grid;place-items:center;padding:clamp(12px,3vmin,24px);overflow:auto;
+    background:linear-gradient(0deg,#091b20df,#091b2040);pointer-events:none}
+  .race-intro-card{width:min(470px,100%);text-align:center;pointer-events:auto}
+  .race-intro-card .eyebrow{font:700 12px system-ui;letter-spacing:.24em;color:var(--race-accent);text-transform:uppercase}
+  .race-intro-card h2{font:900 italic clamp(46px,10vmin,78px)/.92 system-ui;letter-spacing:-.055em;margin:18px 0;color:#fff}
+  #intro-distance{font-size:14px;color:#d2e0dc;margin-bottom:24px}
+  .race-intro-card p{font-size:14px;color:#e0e8de;line-height:1.6;margin:18px auto;max-width:340px}
+  #start-race{width:100%;max-width:300px;min-height:58px;border:0;border-radius:30px;background:var(--race-accent);
+    color:#172724;font:800 18px system-ui;cursor:pointer;box-shadow:0 8px 28px #0003}
+  #start-race:hover{background:#ffe396}
+  #intro-visit{display:block;margin:18px auto 0;background:none;border:0;color:#e4ebe3;font:600 14px system-ui;cursor:pointer;padding:12px}
+  .intro-phone{display:none}body.touch .intro-phone{display:block}body.touch .intro-keyboard{display:none}
+  #race-countdown{position:fixed;z-index:34;inset:0;display:grid;place-items:center;pointer-events:none;
+    font:950 italic clamp(90px,27vmin,210px) system-ui;color:#fff;text-shadow:0 6px 30px #0006}
+  body.race-ready #timing,body.race-ready #panel,body.race-ready #mobile-dock,body.race-ready #mini{visibility:hidden}
+  body.map-open #race-intro,body.map-open #race-countdown,body.race-finished #race-intro,body.race-finished #race-countdown{display:none}
+  body:not(.visiting) #timing{top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);text-align:center;
+    width:clamp(180px,24vw,250px);padding:12px 16px;border-radius:16px;background:#102c2bba;border:1px solid #eaf3dc24;backdrop-filter:blur(8px)}
+  #clock{font:800 italic clamp(28px,6vmin,40px)/1 system-ui;font-variant-numeric:tabular-nums}
+  #lap{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  #lap-progress{height:4px;border-radius:4px;background:#d6e3cf25;margin-top:10px;overflow:hidden}
+  #lap-progress-fill{height:100%;width:0;background:var(--race-accent);border-radius:4px}
+  #lap-distance{font-size:10px;opacity:.65;margin-top:6px;letter-spacing:.03em}
+  #mode-switch{left:max(18px,env(safe-area-inset-left));transform:none}
+  body:not(.visiting) #grade,body:not(.visiting) #alt{display:none}
+  body:not(.visiting) #gate-status{font-size:11px!important;max-width:210px;margin-top:8px!important;line-height:1.3;opacity:.7}
+  #kmh{font:850 italic clamp(38px,9vmin,62px)/1 system-ui;font-variant-numeric:tabular-nums}
+  #kmh span{display:block;font:700 10px system-ui;letter-spacing:.14em;text-transform:uppercase;margin:4px 0 0}
+  #boost-card{margin-top:16px;width:190px;text-align:left;padding:12px 14px;background:#102c2bcc;border:1px solid #eaf3dc30;border-radius:12px;backdrop-filter:blur(6px)}
+  #boost-label{font:750 10px system-ui;letter-spacing:.14em;color:var(--race-accent)}
+  #boost-meter{height:6px;border-radius:6px;background:#eaf3dc22;overflow:hidden;margin:8px 0}
+  #boost-fill{height:100%;width:0;border-radius:6px;background:#bcec85}
+  #boost-status{font:500 10px/1.4 system-ui;max-width:165px;margin-top:0;color:#e2eadc}
+  body.boosting #boost-card{border-color:#c2fb8c}
+  body.boosting #boost-label{color:#c2fb8c}
+  #finish-details{font-size:13px;color:#64745b;margin:0 0 16px}
+  @media(max-width:650px){
+    body.touch:not(.visiting) #timing{top:calc(max(10px,env(safe-area-inset-top)) + 61px);left:max(12px,env(safe-area-inset-left));
+      transform:none;text-align:left;width:180px;padding:10px 12px}
+    body.touch #clock{font-size:30px}
+    body.touch #best{font-size:10px;margin-top:4px}
+    body.touch #lap{margin-top:6px;font-size:10px}
+    body.touch:not(.visiting) #gate-status{display:none}
+    body.touch #boost-card{width:155px;padding:10px}
+    body.touch #boost-status{font-size:9px}
+    body.touch:not(.visiting) #mini{top:calc(max(10px,env(safe-area-inset-top)) + 74px);right:max(12px,env(safe-area-inset-right));left:auto;bottom:auto;width:86px;height:86px;border-radius:12px}
+    body.touch #goose-notice{top:calc(max(10px,env(safe-area-inset-top)) + 202px)}
+  }
+  @media(max-height:520px) and (orientation:landscape){
+    body.touch:not(.visiting) #timing{top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+      width:180px;padding:8px 12px;text-align:center}
+    body.touch #clock{font-size:26px}
+    body.touch #lap-progress,body.touch #lap-distance,body.touch #best{display:none}
+    body.touch #boost-card{width:150px;margin-top:6px;padding:8px}
+    body.touch #boost-status{display:none}
+    body.touch #goose-notice{top:calc(max(10px,env(safe-area-inset-top)) + 100px)}
+    body.touch:not(.visiting) #mini{top:max(10px,env(safe-area-inset-top));right:calc(max(12px,env(safe-area-inset-right)) + 60px);width:70px;height:70px}
+    .race-intro-card h2{font-size:46px;margin:10px 0}
+    #intro-distance{margin-bottom:12px}.race-intro-card p{margin:10px auto;font-size:12px}
+    #start-race{min-height:48px}#intro-visit{margin:5px auto 0}
+  }
+  @media(prefers-reduced-motion:reduce){#boost-fill,#lap-progress-fill{transition:none}}
+
   </style>
 </head>
 <body>
@@ -196,8 +262,23 @@
 <div class="hud" id="timing">
   <div id="clock">0:00.00</div>
   <div id="best">best · —</div>
-  <div id="lap">lap 1</div><div id="gate-status" style="font-size:16px;margin-top:12px">Accelerate through the entrance gate</div>
+  <div id="lap">lap 1</div>
+  <div id="lap-progress" role="progressbar" aria-label="Lap progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="lap-progress-fill"></div></div>
+  <div id="lap-distance">1.25 km to finish</div><div id="gate-status" style="font-size:16px;margin-top:12px">Accelerate through the entrance gate</div>
 </div>
+
+<div id="race-intro">
+  <div class="race-intro-card">
+    <div class="eyebrow">Université · Valrose</div>
+    <h2>VALROSE<br>CIRCUIT.</h2>
+    <div id="intro-distance">1.25 km · one campus lap</div>
+    <button id="start-race" type="button">Start race →</button>
+    <p class="intro-keyboard">↑ Accelerate · ← → Steer · ↓ Brake<br>Hold the green line to charge your boost.</p>
+    <p class="intro-phone">Slide on the arrow pad to accelerate and steer.<br>Hold the green line to charge your boost.</p>
+    <button id="intro-visit" type="button">Explore the campus</button>
+  </div>
+</div>
+<div id="race-countdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
 
 <div id="mode-switch" role="group" aria-label="Game mode">
   <button id="mode-race" type="button" aria-pressed="true">Race</button>
@@ -208,7 +289,7 @@
   <div class="finish-card">
     <div class="eyebrow">Valrose circuit</div>
     <h2 id="finish-title">Lap complete!</h2>
-    <p id="finish-time" role="status"></p><p id="finish-best"></p>
+    <p id="finish-time" role="status"></p><p id="finish-best"></p><p id="finish-details"></p>
     <table><caption>Your best laps this session</caption><thead><tr><th scope="col">Rank</th><th scope="col">Driver</th><th scope="col">Time</th></tr></thead><tbody id="score-rows"></tbody></table>
     <div class="result-share">
       <label for="driver-name">Your name</label>
@@ -226,7 +307,7 @@
     <div id="kmh">0<span>km/h</span></div>
     <div id="grade">0.0 %</div>
     <div id="alt">— m</div>
-    <div id="boost-status">Green center line = boost</div>
+    <div id="boost-card"><div id="boost-label">CENTER BOOST</div><div id="boost-meter" role="progressbar" aria-label="Center-line boost charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="boost-fill"></div></div><div id="boost-status">Hold the green line for 2 seconds</div></div>
   </div>
   <div id="touch-pad">
     <div id="direction-pad" role="group" aria-label="Slide on the driving pad; diagonals accelerate and steer">
@@ -306,6 +387,7 @@
   <script src="src/15-race.js"></script>
   <script src="src/16-geese.js"></script>
   <script src="src/17-sharing.js"></script>
+  <script src="src/18-racing.js"></script>
   <script src="streamlit-bridge.js"></script>
   <script src="src/11-boot.js"></script>
 </body>

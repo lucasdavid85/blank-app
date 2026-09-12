@@ -7,8 +7,10 @@
 /* ═══════════════ 5. PHYSICS ═══════════════ */
 
 const KART = {
-  radius: 0.85, engine: 21, brake: 34, launchSpeed: 20,
-  boostHalfWidth: 0.7, centerBoost: 1.85,
+  radius: 0.85, engine: 21, brake: 34, launchSpeed: 20, maxSpeed: 20,
+  maxBoostSpeed: 28, slopeGain: 3.2,
+  boostHalfWidth: 0.7, centerBoost: 1.85, boostChargeSeconds: 2, boostSeconds: 2.5,
+  steerResponse: 10,
   steer: 2.5, gripOn: 0.87, gripSlide: 0.975, drag: 0.9965,
   launchBoost: 1.6  // race-only acceleration multiplier from the entrance to the circuit
 };
@@ -16,7 +18,7 @@ const G = 9.81;
 
 const kart = { x: 0, y: 0, a: 0, vx: 0, vy: 0, offroad: false, slip: 0, grade: 0, alt: 0 };
 const race = { s: 0, progress: 0, lap: 1, t: 0, best: null, running: false,
-  finished: false, results: [], lastTick: null, course: '' };
+  finished: false, results: [], lastTick: null, course: '', boosts: 0, railHits: 0 };
 const skids = [];
 
 function resetKart() {
@@ -26,7 +28,9 @@ function resetKart() {
     kart.a = Math.atan2(L[1][0]-L[0][0], L[1][1]-L[0][1]);
   } else { kart.x = kart.y = 0; kart.a = 0; }
   if(gate.group){[kart.x,kart.y]=gateSpawn();kart.a=Math.atan2(...gate.forward);resetGate();}
-  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false; kart.boosting = false;
+  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false;
+  kart.steering=0;kart.wheelSpin=0;kart.railContact=false;cancelCenterBoost();
+  race.boosts=0;race.railHits=0;resetRaceEffects();
   race.s = onLine(kart.x, kart.y).s;
   const course = JSON.stringify(world.line);
   if (race.course !== course) { race.best = null; race.results.length = 0; race.course = course; }
@@ -37,6 +41,7 @@ function resetKart() {
     const m = skidGroup.children.pop(); m.geometry.dispose(); skidGroup.remove(m);
   }
   skids.length = 0;
+  prepareRaceStart();resetCameraView();
 }
 
 const keys = new Set();
@@ -54,7 +59,7 @@ addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
 const held = (...k) => k.some(x => keys.has(x));
 
 function step(dt) {
-  if (mapOpen || race.finished) return;
+  if (mapOpen || race.finished || raceWaitingForStart()) return;
   const visiting=playMode==='visit';
   const throttle = held("arrowup","w","z");
   const braking  = held("arrowdown","s");
@@ -69,25 +74,29 @@ function step(dt) {
   const near = onLine(kart.x, kart.y, race.running ? race.s : null);
   kart.offroad = visiting && near.dist > TRACK_W;
   const launching = !visiting && !race.running;
-  kart.boosting = !visiting && race.running && near.dist <= KART.boostHalfWidth &&
-    throttle && !braking && !hand && fwd >= 0 && alignedWithCircuit(hx,hy,near.s);
-  const acceleration = kart.boosting ? KART.centerBoost : launching ? KART.launchBoost : 1;
+  const canAccelerate=throttle&&!braking&&!hand&&fwd>=0&&alignedWithCircuit(hx,hy,near.s);
+  updateCenterBoost(dt,near.dist<=KART.boostHalfWidth,canAccelerate);
+  const acceleration = kart.boosting||kart.onBoostLine ? KART.centerBoost : launching ? KART.launchBoost : 1;
   if (throttle) fwd += KART.engine * acceleration * dt;
   if (braking)  fwd -= (fwd > 0 ? KART.brake : KART.engine * 0.5) * dt;
 
   // ── the relief acts here ──
   // component of gravity along the heading; uphill bleeds speed, downhill adds it,
-  // and downhill is allowed to push past the flat-ground top speed.
+  // visit mode can exceed the flat-ground speed; race remains capped.
   const [gx, gy] = gradientAt(kart.x, kart.y);
   const alongSlope = gx*hx + gy*hy;                    // rise per metre travelled
   kart.grade = alongSlope;
-  fwd -= G * alongSlope /
+  fwd -= G * (visiting ? 1 : KART.slopeGain) * alongSlope /
          Math.sqrt(1 + alongSlope*alongSlope) * dt;
+  const speedLimit = kart.boosting ? KART.maxBoostSpeed : KART.maxSpeed;
+  if (!visiting) fwd = Math.max(-KART.maxSpeed*.4, Math.min(speedLimit, fwd));
   // sideways slope nudges the kart downhill across the track
   lat -= G * 0.5 * (gx*rx + gy*ry) * dt;
 
   const speedFactor = Math.min(1, Math.abs(fwd)/8) * (1 - Math.min(.45, Math.abs(fwd)/60));
-  kart.a += steerIn * KART.steer * speedFactor * dt * Math.sign(fwd || 1);
+  kart.steering=visiting?steerIn:kart.steering+(steerIn-kart.steering)*(1-Math.exp(-KART.steerResponse*dt));
+  if(Math.abs(kart.steering)<.001)kart.steering=0;
+  kart.a += kart.steering * KART.steer * speedFactor * dt * Math.sign(fwd || 1);
 
   const grip = hand ? KART.gripSlide : (kart.offroad ? 0.94 : KART.gripOn);
   lat *= Math.pow(grip, dt*60);
@@ -97,6 +106,10 @@ function step(dt) {
   kart.slip = Math.abs(lat);
   kart.vx = hx*fwd + rx*lat;
   kart.vy = hy*fwd + ry*lat;
+  if (!visiting) {
+    const speed = Math.hypot(kart.vx,kart.vy);
+    if (speed > speedLimit) { kart.vx *= speedLimit/speed; kart.vy *= speedLimit/speed; }
+  }
   const previous=[kart.x,kart.y];
   kart.x += kart.vx*dt;  kart.y += kart.vy*dt;
   kart.x = Math.max(-HALF+5, Math.min(HALF-5, kart.x));
@@ -125,6 +138,7 @@ function step(dt) {
     nX += nx; nY += ny; contacts++;
   }
   if (contacts) {
+    if(!visiting)cancelCenterBoost();
     kart.x += pushX / contacts;
     kart.y += pushY / contacts;
     const n = Math.hypot(nX, nY) || 1;
