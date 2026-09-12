@@ -12,8 +12,10 @@ let camHeading=0;
 const _n = new THREE.Vector3(), _f = new THREE.Vector3(), _up = new THREE.Vector3(0,1,0);
 
 function placeKart() {
-  const h = heightAt(kart.x, kart.y);
-  const [gx, gy] = gradientAt(kart.x, kart.y);
+  const h = drivingHeightAt(kart.x, kart.y);
+  const delta=.35;
+  const gx=(drivingHeightAt(kart.x+delta,kart.y)-drivingHeightAt(kart.x-delta,kart.y))/(2*delta);
+  const gy=(drivingHeightAt(kart.x,kart.y+delta)-drivingHeightAt(kart.x,kart.y-delta))/(2*delta);
   _n.set(-gx, 1, gy).normalize();                     // terrain normal, three coords
   kartObj.position.set(kart.x, h, -kart.y);
   kartObj.up.copy(_n);

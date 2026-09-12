@@ -87,7 +87,7 @@ function buildRaceDetails(){
     for(const [forward,side] of [[-1,-1],[-1,1],[1,-1],[1,1]]){
       const x=p[0]+dx/n*forward*length/2+dy/n*(offset+side*width/2);
       const y=p[1]+dy/n*forward*length/2-dx/n*(offset+side*width/2);
-      positions.push(x,heightAt(x,y)+.3,-y);colors.push(c.r,c.g,c.b);
+      positions.push(x,raceHeightAt(x,y)+.06,-y);colors.push(c.r,c.g,c.b);
     }
     indices.push(index,index+2,index+1,index+1,index+2,index+3);
   }
@@ -105,7 +105,8 @@ function buildRaceDetails(){
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);
+  fitSurfaceAbove(geometry,raceSurface,.06);
   const mesh=new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.receiveShadow=true;group.add(mesh);return group;
 }

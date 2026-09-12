@@ -70,10 +70,10 @@ function buildRaceBarriers() {
     new THREE.MeshLambertMaterial({color:0x52665c}),sections.length);
   const dummy=new THREE.Object3D();
   sections.forEach((p,i)=>{
-    dummy.position.set(p.x,heightAt(p.x,p.y)+.44,-p.y);
+    dummy.position.set(p.x,raceHeightAt(p.x,p.y)+.36,-p.y);
     dummy.rotation.y=p.a;dummy.scale.set(1,1,p.length);dummy.updateMatrix();
     rails.setMatrixAt(i,dummy.matrix);
-    dummy.position.y=heightAt(p.x,p.y)+.25;dummy.scale.set(1,1,1);
+    dummy.position.y=raceHeightAt(p.x,p.y)+.17;dummy.scale.set(1,1,1);
     dummy.updateMatrix();posts.setMatrixAt(i,dummy.matrix);
   });
   rails.castShadow=true;rails.receiveShadow=true;barrierGroup.add(rails,posts);
@@ -85,19 +85,20 @@ function alignedWithCircuit(hx,hy,s) {
 }
 function buildBoostLine(samples) {
   const group=new THREE.Group();group.name='center-boost';
-  for(const [width,color,opacity,lift] of [[KART.boostHalfWidth,0xa2ec78,.18,.255],[.1,0xc3fa91,1,.27]]){
+  for(const [width,color,opacity,lift] of [[KART.boostHalfWidth,0xa2ec78,.18,.018],[.1,0xc3fa91,1,.035]]){
     const positions=[],indices=[],last=samples.length-1;
     samples.forEach(([x,y],i)=>{
       const k=i===last?0:i,a=samples[(k-1+last)%last],b=samples[(k+1)%last];
       const dx=b[0]-a[0],dy=b[1]-a[1],n=Math.hypot(dx,dy)||1;
       for(const side of [-1,1]){
         const px=x+dy/n*width*side,py=y-dx/n*width*side;
-        positions.push(px,heightAt(px,py)+lift,-py);
+        positions.push(px,raceHeightAt(px,py)+lift,-py);
       }
       if(i<last){const j=i*2;indices.push(j,j+2,j+1,j+1,j+2,j+3);}
     });
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);
+    fitSurfaceAbove(geometry,raceSurface,lift);
     group.add(new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,opacity,transparent:opacity<1,depthWrite:opacity===1,side:THREE.DoubleSide})));
   }
   const positions=[];
@@ -105,10 +106,11 @@ function buildBoostLine(samples) {
     const p=pointAtS(s),a=pointAtS(s-.5),b=pointAtS(s+.5),dx=b[0]-a[0],dy=b[1]-a[1],n=Math.hypot(dx,dy)||1;
     for(const side of [-1,1])for(const [forward,right] of [[.55,0],[-.35,side*.5],[-.18,side*.5]]){
       const x=p[0]+dx/n*forward+dy/n*right,y=p[1]+dy/n*forward-dx/n*right;
-      positions.push(x,heightAt(x,y)+.28,-y);
+      positions.push(x,raceHeightAt(x,y)+.05,-y);
     }
   }
   const arrows=new THREE.BufferGeometry();arrows.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  fitSurfaceAbove(arrows,raceSurface,.05);
   group.add(new THREE.Mesh(arrows,new THREE.MeshBasicMaterial({color:0xd2f9b6,side:THREE.DoubleSide})));
   return group;
 }

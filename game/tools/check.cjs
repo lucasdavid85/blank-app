@@ -364,6 +364,81 @@ console.log('Ideal full-centerline timing (constant speed, no braking or collisi
 
 
 vm.runInContext(`
+const groundPosition=terrainMesh.geometry.attributes.position;
+function renderedGroundHeight(x,y){
+ const step=DEM.size/DEM.n,w=DEM.n+1,fx=(x+HALF)/step,fy=(y+HALF)/step;
+ const i=Math.max(0,Math.min(DEM.n-1,Math.floor(fx))),j=Math.max(0,Math.min(DEM.n-1,Math.floor(fy)));
+ const u=fx-i,v=fy-j,a=j*w+i,b=a+1,c=a+w,d=c+1;
+ return u+v<=1?groundPosition.getY(a)*(1-u-v)+groundPosition.getY(b)*u+groundPosition.getY(c)*v:
+   groundPosition.getY(d)*(u+v-1)+groundPosition.getY(c)*(1-u)+groundPosition.getY(b)*(1-v);
+}
+const roadPosition=trackMesh.geometry.attributes.position,roadIndex=trackMesh.geometry.index;
+let lowestRoadClearance=Infinity,roadChecks=0;
+for(let offset=0;offset<roadIndex.count;offset+=3){
+ const ids=[roadIndex.getX(offset),roadIndex.getX(offset+1),roadIndex.getX(offset+2)];
+ for(let u=0;u<=5;u++)for(let v=0;v<=5-u;v++){
+  const weights=[u/5,v/5,1-(u+v)/5];
+  const x=ids.reduce((s,i,k)=>s+roadPosition.getX(i)*weights[k],0);
+  const y=ids.reduce((s,i,k)=>s-roadPosition.getZ(i)*weights[k],0);
+  const h=ids.reduce((s,i,k)=>s+roadPosition.getY(i)*weights[k],0);
+  lowestRoadClearance=Math.min(lowestRoadClearance,h-renderedGroundHeight(x,y));roadChecks++;
+ }
+}
+if(lowestRoadClearance<.0799)throw Error('Grass intersects the asphalt at a road interior or edge: '+lowestRoadClearance);
+
+let paintChecks=0;
+for(const group of trackMesh.children)for(const mesh of group.children){
+ const p=mesh.geometry.attributes.position,index=mesh.geometry.index,count=index?.count??p.count;
+ for(let offset=0;offset<count;offset+=3){
+  const ids=[0,1,2].map(k=>index?index.getX(offset+k):offset+k);
+  for(const weights of [[1/3,1/3,1/3],[.5,.5,0],[0,.5,.5],[.5,0,.5]]){
+   const x=ids.reduce((s,i,k)=>s+p.getX(i)*weights[k],0);
+   const y=ids.reduce((s,i,k)=>s-p.getZ(i)*weights[k],0);
+   const h=ids.reduce((s,i,k)=>s+p.getY(i)*weights[k],0);
+   if(h<renderedGroundHeight(x,y)+.01||h<raceHeightAt(x,y)+.0175)
+    throw Error('Road paint is buried in the grass or asphalt: '+group.name);
+   paintChecks++;
+  }
+ }
+}
+console.log('Passed: boost bands, chevrons, kerbs and finish stripe remain above grass and asphalt',{paintChecks});
+
+const expectedSites=new Map([
+ ['B116',['ICN']],['B086',['LJAD']],['B082',['Lagrange']],
+ ['B128',['CCMA']],['B083',['IBV Biochimie']],['B109',['IBV','ECOSEAS']]
+]);
+for(const [id,labs] of expectedSites){
+ const building=world.buildings.find(b=>b.properties.localId===id);
+ if(!building||labs.some(name=>!building.properties.laboratories?.includes(name)))throw Error('Laboratory not represented: '+id);
+ if(!labelGroup.children.some(m=>m.userData.building===building))throw Error('Laboratory has no visible building label: '+id);
+}
+const icn=world.buildings.find(b=>b.properties.localId==='B116');
+if(icn.height!==27||icn.properties.building==='roof'||icn.properties.wall==='no')throw Error('ICN still uses a roof-only height');
+const icnBody=buildingGroup.children.find(m=>m.userData.building===icn),icnBase=Math.min(...icn.poly.map(p=>heightAt(...p)));
+icnBody.geometry.computeBoundingBox();
+if(Math.abs(icnBody.geometry.boundingBox.max.y-(icnBase+27))>.0001)throw Error('ICN roof does not reach the official elevation');
+const icnWindows=buildingGroup.children.find(m=>m.userData.facadeFor==='B116'),icnCladding=buildingGroup.children.find(m=>m.userData.claddingFor==='B116');
+if(!icnWindows||!icnCladding)throw Error('ICN window bands or ground-floor cladding missing');
+const windows=icnWindows.geometry.attributes.position;
+for(let i=0;i<windows.count;i+=4){
+ let x=0,y=0;for(let k=0;k<4;k++){x+=windows.getX(i+k)/4;y-=windows.getZ(i+k)/4;}
+ if(pointInPoly(x,y,icn.poly))throw Error('ICN windows face into the solid building');
+}
+const formerPhysics=world.buildings.find(b=>b.properties.localId==='B001');
+if(!formerPhysics.properties.formerLaboratories?.includes('InPhyNi'))throw Error('Former Valrose physics laboratory footprint missing');
+for(let s=0;s<world.length;s+=4){
+ const p=pointAtS(s);[kart.x,kart.y]=p;placeKart();
+ if(kartObj.position.y<renderedGroundHeight(...p)+.0799||Math.abs(kartObj.position.y-raceHeightAt(...p))>1e-5)
+  throw Error('Kart does not follow the visible asphalt');
+}
+console.log('Passed: full road/grass clearance, ICN official height and outward façade, all campus laboratory sites and kart contact',{
+ roadTriangles:roadIndex.count/3,roadChecks,lowestRoadClearance,laboratorySites:expectedSites.size,icnHeight:icn.height});
+resetKart();
+`,ctx);
+
+
+
+vm.runInContext(`
 resetKart();startRaceCountdown();advanceTime(3100);updateRacePresentation(performance.now());
 let driveSteps=0,launchSteps=0;
 keys.add('arrowup');

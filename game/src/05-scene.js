@@ -111,56 +111,58 @@ function buildTerrain() {
     new THREE.MeshLambertMaterial({ vertexColors: true, map: buildGrassTexture(), side: THREE.FrontSide }));
   terrainMesh.receiveShadow = true;
   scene.add(terrainMesh);
+  terrainSurface=terrainSurfaceFor(g);
 }
 
 /* ---- racing surface, draped on the relief ---- */
 function buildTrack() {
   if (trackMesh) clearGroup(trackMesh);
-  trackMesh = null;
-  buildRaceBarriers();
+  trackMesh = null;raceSurface=null;
   buildGeese();
   const L = world.line;
-  if (L.length < 3) return;
+  if (L.length < 3) {buildRaceBarriers();return;}
 
+  // Preserve each mapped bend and use small faces in both directions.
   const samples = [];
-  const stepM = 3;
-  for (let s = 0; s < world.length; s += stepM) samples.push(pointAtS(s));
+  for(let i=0;i<L.length-1;i++){
+    const count=Math.max(1,Math.ceil((world.cum[i+1]-world.cum[i])/.8));
+    for(let j=0;j<count;j++){
+      const t=j/count;samples.push([L[i][0]+(L[i+1][0]-L[i][0])*t,L[i][1]+(L[i+1][1]-L[i][1])*t]);
+    }
+  }
   samples.push(samples[0]);
 
   const pos = [], col = [], idx = [];
-  const tar  = new THREE.Color(0x6f7173), kerb = new THREE.Color(0xc4c1b6),
-        line = new THREE.Color(0xdedbd2);
-  const LANES = [[-TRACK_W - 0.9, kerb], [-TRACK_W - 0.1, line], [-TRACK_W + 0.35, tar],
-                 [ TRACK_W - 0.35, tar], [ TRACK_W + 0.1, line], [ TRACK_W + 0.9, kerb]];
-  for (let i = 0; i < samples.length; i++) {
-    const [x, y] = samples[i];
-    const [nx, ny] = samples[(i + 1) % samples.length];
-    const [px, py] = samples[(i - 1 + samples.length) % samples.length];
-    let dx = nx - px, dy = ny - py;
-    const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-    const rx = dy, ry = -dx;                       // right-hand normal
-    for (const [off, c] of LANES) {
-      const wx = x + rx * off, wy = y + ry * off;
-      pos.push(wx, heightAt(wx, wy) + 0.22, -wy);
-      col.push(c.r, c.g, c.b);
+  const tar=new THREE.Color(0x6f7173),kerb=new THREE.Color(0xc4c1b6),line=new THREE.Color(0xdedbd2);
+  const bands=[[-TRACK_W-.9,kerb],[-TRACK_W-.1,line],[-TRACK_W+.35,tar],
+    [TRACK_W-.35,tar],[TRACK_W+.1,line],[TRACK_W+.9,kerb]],lanes=[];
+  for(let i=0;i<bands.length-1;i++){
+    const [a,color]=bands[i],[b,next]=bands[i+1],count=Math.ceil((b-a)/.65);
+    for(let j=0;j<count;j++)lanes.push([a+(b-a)*j/count,color.clone().lerp(next,j/count)]);
+  }
+  lanes.push(bands[bands.length-1]);
+  const width=lanes.length,last=samples.length-1;
+  for(let i=0;i<samples.length;i++){
+    const [x,y]=samples[i],k=i===last?0:i;
+    const [nx,ny]=samples[(k+1)%last],[px,py]=samples[(k-1+last)%last];
+    let dx=nx-px,dy=ny-py,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+    for(const [offset,color] of lanes){
+      const wx=x+dy*offset,wy=y-dx*offset;
+      pos.push(wx,terrainHeightAt(wx,wy)+.08,-wy);col.push(color.r,color.g,color.b);
     }
   }
-  for (let i = 0; i < samples.length - 1; i++) {
-    for (let k = 0; k < 5; k++) {
-      const a = i*6 + k, b = a + 1, c = a + 6, d = a + 7;
-      idx.push(a, c, b, b, c, d);
-    }
+  for(let i=0;i<last;i++)for(let k=0;k<width-1;k++){
+    const a=i*width+k,b=a+1,c=a+width,d=c+1;idx.push(a,c,b,b,c,d);
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  trackMesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({
-    vertexColors: true, side: THREE.DoubleSide }));
-  trackMesh.receiveShadow = true;
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
+  fitSurfaceAbove(g,terrainSurface,.08);
+  trackMesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
+  trackMesh.receiveShadow=true;
+  raceSurface=indexedSurface(g);
   trackMesh.add(buildBoostLine(samples));trackMesh.add(buildRaceDetails());
-  scene.add(trackMesh);
+  scene.add(trackMesh);buildRaceBarriers();
   if(typeof playMode!=='undefined')trackMesh.visible=playMode==='race';
 }
 
@@ -196,7 +198,8 @@ function buildBuildings() {
     const grand = /grand ch/i.test(b.name);
     const H = grand ? totalHeight * 0.67 : totalHeight;
     const lift = b.bridge ? 6.5 : 0;
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: H, bevelEnabled: false });
+    const foundation=b.properties.laboratories?.includes('ICN')?1.5:0;
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: H+foundation, bevelEnabled: false });
     geo.rotateX(-Math.PI / 2);          // shape's y becomes -z, extrusion becomes +y
     geo.translate(0, base - 1.5 + lift, 0);
     const mesh = new THREE.Mesh(geo, b.landmark ? clay : stone);
@@ -209,10 +212,10 @@ function buildBuildings() {
     const cap = new THREE.Mesh(
       new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: false }), roof);
     cap.geometry.rotateX(-Math.PI / 2);
-    cap.geometry.translate(0, base - 1.5 + lift + H, 0);
+    cap.geometry.translate(0, base - 1.5 + lift + foundation + H, 0);
     cap.castShadow = true;
     if(grand){cap.geometry.dispose(); addCastleRoof(b,base-1.5+lift+H,totalHeight-H,roof); } else buildingGroup.add(cap);
-    addFacade(b,base-1.5+lift,H);
+    addFacade(b,base-1.5+lift+foundation,H);
     if(grand)addCastleDetails(b,base-1.5+lift,H,totalHeight-H);
   }
 }
@@ -395,17 +398,36 @@ function addCastleDetails(b,base,H,rise){
  }
 }
 function addFacade(b,base,H){
- const glass=new THREE.MeshLambertMaterial({color:b.landmark?0x384c53:0x58747e,side:THREE.DoubleSide});
- const positions=[],indices=[],floors=b.landmark?3:Math.max(1,Math.min(8,Math.round(H/3.4)));
+ const icn=b.properties.facadeStyle==='icn';
+ const glass=new THREE.MeshLambertMaterial({color:b.landmark?0x384c53:icn?0x34474d:0x58747e,side:THREE.DoubleSide});
+ const positions=[],indices=[],cladding=[],claddingIndices=[];
+ const floors=b.landmark?3:Math.max(1,Math.min(8,Math.round(H/3.4)));
  for(let i=1;i<b.poly.length;i++){
   const a=b.poly[i-1],c=b.poly[i],dx=c[0]-a[0],dy=c[1]-a[1],length=Math.hypot(dx,dy);if(length<3)continue;
+  const ux=dx/length,uy=dy/length;let nx=uy,ny=-ux;
+  const mx=(a[0]+c[0])/2,my=(a[1]+c[1])/2;
+  if(pointInPoly(mx+nx*.1,my+ny*.1,b.poly)){nx=-nx;ny=-ny;}
+  if(icn){
+   const index=cladding.length/3;
+   for(const [t,h] of [[0,0],[1,0],[0,7],[1,7]])
+    cladding.push(a[0]+dx*t+nx*.035,base+h,-a[1]-dy*t-ny*.035);
+   claddingIndices.push(index,index+1,index+2,index+1,index+3,index+2);
+  }
   const ribbon=b.properties.facadeStyle==='ribbon';
-  const count=ribbon?1:Math.floor(length/(b.landmark?3.5:3)),width=ribbon?length*.96:Math.min(1.35,length/count*.45),ux=dx/length,uy=dy/length;
+  const count=ribbon?1:Math.max(1,Math.floor(length/(b.landmark?3.5:icn?2:3)));
+  const width=ribbon?length*.96:icn?length/count*.88:Math.min(1.35,length/count*.45);
   for(let j=0;j<count;j++)for(let f=0;f<floors;f++){
-   const x=a[0]+dx*(j+.5)/count,y=a[1]+dy*(j+.5)/count,z=base+(f+.45)*H/floors,idx=positions.length/3;
-   for(const [u,v] of [[-1,0],[1,0],[-1,1],[1,1]])positions.push(x+ux*u*width/2+uy*.03,z+v*Math.min(1.8,H/floors*.5),-y-uy*u*width/2+ux*.03);
-   indices.push(idx,idx+1,idx+2,idx+1,idx+3,idx+2);
+   const x=a[0]+dx*(j+.5)/count,y=a[1]+dy*(j+.5)/count,z=base+(f+.45)*H/floors,index=positions.length/3;
+   for(const [u,v] of [[-1,0],[1,0],[-1,1],[1,1]])
+    positions.push(x+ux*u*width/2+nx*.065,z+v*Math.min(1.8,H/floors*.5),-y-uy*u*width/2-ny*.065);
+   indices.push(index,index+1,index+2,index+1,index+3,index+2);
   }
  }
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();buildingGroup.add(new THREE.Mesh(g,glass));
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
+ const windows=new THREE.Mesh(g,glass);windows.userData.facadeFor=b.properties.localId;buildingGroup.add(windows);
+ if(cladding.length){
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(cladding,3));g.setIndex(claddingIndices);
+  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0xb5794f,side:THREE.DoubleSide}));
+  mesh.userData.claddingFor=b.properties.localId;buildingGroup.add(mesh);
+ }
 }

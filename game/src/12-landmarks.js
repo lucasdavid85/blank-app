@@ -13,6 +13,8 @@ function labelTexture(text){
 const ENGLISH_PLACE_NAMES=new Map([
  ['Amphi Chimie','Chemistry Lecture Hall'],['Amphi Informatique','Computer Science Lecture Hall'],
  ['Amphi Physique','Physics Lecture Hall'],['Bibliothèque universitaire','University Library'],
+ ['Bibliothèque universitaire · CCMA','CCMA · University Library'],
+ ['Bâtiment T · ancien InPhyNi','Building T · Former InPhyNi'],
  ['Bâtiment T','Building T'],['Centre sportif','Sports Center'],['Entrée Principale','Main Entrance'],
  ['Grand Château et Théâtre','Grand Château and Theater'],['IBV · Centre de Biochimie','IBV · Biochemistry Center'],
  ['ICN · Chimie Recherche','ICN · Chemistry Research'],['Laboratoire J. A. Dieudonné','J. A. Dieudonné Laboratory'],
