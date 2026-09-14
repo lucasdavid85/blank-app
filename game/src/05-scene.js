@@ -142,13 +142,54 @@ function buildTrack() {
   }
   lanes.push(bands[bands.length-1]);
   const width=lanes.length,last=samples.length-1;
+
+  // Back to the mapped terrain's own shape — both hills, the dip between
+  // them, the real ~24 m climb to the high side — just with a light pass to
+  // take the short-wavelength bumps off it. Each point is averaged with a
+  // fairly narrow window of its neighbours, so the road still follows the
+  // ground closely (nothing floats, nothing merges into a plateau); only the
+  // small-scale texture gets sanded down. The last stretch fades back to the
+  // raw terrain height so the paved circuit still meets the unpaved entrance
+  // connector exactly as before. Cross-track stays perfectly level (one
+  // height per sample, not per lane), so neither the road nor the boost line
+  // ever tilts sideways — and using the highest ground under the *whole*
+  // width at each sample (not just the centreline) means fitSurfaceAbove,
+  // below, never has to yank just one lane's edge up higher than the rest,
+  // which is what was cracking the kerb paint into that jagged little ridge.
+  const n = last; // samples[last] duplicates samples[0], the loop's true length
+  const raw = new Array(n), cum = new Array(n + 1); cum[0] = 0;
+  for (let i = 0; i < n; i++) {
+    const [x,y]=samples[i],k=i,[nx,ny]=samples[(k+1)%n],[px,py]=samples[(k-1+n)%n];
+    let dx=nx-px,dy=ny-py,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+    let hi=-Infinity;
+    for(const [offset] of lanes)hi=Math.max(hi,terrainHeightAt(x+dy*offset,y-dx*offset));
+    raw[i]=hi;
+  }
+  for (let i = 1; i <= n; i++) {
+    const [ax,ay]=samples[i-1],[bx,by]=samples[i%n];
+    cum[i] = cum[i-1] + Math.hypot(bx-ax, by-ay);
+  }
+  const loopLen = cum[n], step = loopLen/n || .8;
+  const smoothRadius = 45, seamTaper = 45;
+  const win = Math.max(1, Math.round(smoothRadius/step));
+  const smoothed = new Array(samples.length);
+  for (let i = 0; i < n; i++) {
+    let sum = 0;
+    for (let k = -win; k <= win; k++) sum += raw[((i+k)%n+n)%n];
+    const avg = sum/(2*win+1), seamDist = Math.min(cum[i], loopLen-cum[i]);
+    const t = Math.min(1, seamDist/seamTaper);
+    smoothed[i] = raw[i] + (avg-raw[i])*t;
+  }
+  smoothed[last] = smoothed[0];
+
   for(let i=0;i<samples.length;i++){
     const [x,y]=samples[i],k=i===last?0:i;
     const [nx,ny]=samples[(k+1)%last],[px,py]=samples[(k-1+last)%last];
     let dx=nx-px,dy=ny-py,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+    const rowY=smoothed[i]+.08;
     for(const [offset,color] of lanes){
       const wx=x+dy*offset,wy=y-dx*offset;
-      pos.push(wx,terrainHeightAt(wx,wy)+.08,-wy);col.push(color.r,color.g,color.b);
+      pos.push(wx,rowY,-wy);col.push(color.r,color.g,color.b);
     }
   }
   for(let i=0;i<last;i++)for(let k=0;k<width-1;k++){
@@ -302,6 +343,12 @@ function buildPaths() {
     m.geometry.dispose(); pathGroup.remove(m);
   }
   const mat = new THREE.MeshLambertMaterial({ color: 0xb9b5a7, side: THREE.DoubleSide });
+  // The race surface no longer sits at exactly terrainHeightAt (it's smoothed
+  // to take the small bumps off), so a footpath crossing the circuit can no
+  // longer assume the paved road is at raw terrain height either — it needs
+  // to duck under the actual road surface there, or it pokes up through the
+  // asphalt as a jagged crack right where the two cross.
+  const onRoad = raceSurface && world.line.length > 2;
   for (const p of world.paths) {
     const vertices = [], indices = [], half = (p.width || 2) / 2;
     for (let j=1;j<p.length;j++) {
@@ -313,7 +360,8 @@ function buildPaths() {
         const offset=vertices.length/3;
         for(const [t,side] of [[k/count,1],[k/count,-1],[(k+1)/count,1],[(k+1)/count,-1]]) {
           const x=a[0]+(b[0]-a[0])*t+nx*side, y=a[1]+(b[1]-a[1])*t+ny*side;
-          vertices.push(x,heightAt(x,y)+0.12,-y);
+          const h = onRoad && onLine(x,y).dist < TRACK_W+.9 ? raceHeightAt(x,y)-0.05 : heightAt(x,y)+0.12;
+          vertices.push(x,h,-y);
         }
         indices.push(offset,offset+2,offset+1,offset+1,offset+2,offset+3);
       }
@@ -325,39 +373,65 @@ function buildPaths() {
   }
 }
 
-/* ---- kart ---- */
+/* ---- kart: a small blue hatchback, low-poly homage to a Peugeot 106 ---- */
 function buildKart() {
   kartObj = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 2.6),
-    new THREE.MeshLambertMaterial({ color: 0xe4b24a }));
-  body.position.y = 0.55; body.castShadow = true;
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.3, 0.8),
-    new THREE.MeshLambertMaterial({ color: 0xc9973a }));
-  nose.position.set(0, 0.45, -1.6);
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.75),
-    new THREE.MeshLambertMaterial({ color: 0x2f3a34 }));
-  seat.position.set(0, 1.05, 0.35); seat.castShadow = true;
-  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 10),
-    new THREE.MeshLambertMaterial({ color: 0xd8dde0 }));
-  helmet.position.set(0, 1.6, 0.25); helmet.castShadow = true;
-  const wheelG = new THREE.CylinderGeometry(0.42, 0.42, 0.36, 12);
+  const blue = 0x1c56b3, blueDark = 0x17458d, glass = 0x232f3a,
+    bumper = 0x272725, trim = 0xd8dadc, headlight = 0xf2eeda, taillight = 0xaf372c;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 2.95),
+    new THREE.MeshLambertMaterial({ color: blue }));
+  body.position.y = 0.5; body.castShadow = true; body.receiveShadow = true;
+  const hood = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.14, 0.85),
+    new THREE.MeshLambertMaterial({ color: blueDark }));
+  hood.position.set(0, 0.78, -1.35);
+  const hatch = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 0.5),
+    new THREE.MeshLambertMaterial({ color: blueDark }));
+  hatch.position.set(0, 0.75, 1.4);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.1, 1.55),
+    new THREE.MeshLambertMaterial({ color: blue }));
+  roof.position.set(0, 1.18, 0.05); roof.castShadow = true;
+  const glassBox = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.38, 1.5),
+    new THREE.MeshLambertMaterial({ color: glass }));
+  glassBox.position.set(0, 0.96, 0.05);
+  for (const [z, sign] of [[-1.66, -1], [1.66, 1]]) {
+    const bump = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.28, 0.22),
+      new THREE.MeshLambertMaterial({ color: bumper }));
+    bump.position.set(0, 0.4, z); kartObj.add(bump);
+    for (const x of [-0.55, 0.55]) {
+      const light = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.06),
+        new THREE.MeshLambertMaterial({ color: sign < 0 ? headlight : taillight }));
+      light.position.set(x, 0.56, z + sign * 0.07); kartObj.add(light);
+    }
+  }
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.05),
+    new THREE.MeshLambertMaterial({ color: 0x161616 }));
+  grille.position.set(0, 0.5, -1.63);
+  for (const x of [-0.83, 0.83]) {
+    const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.13, 0.22),
+      new THREE.MeshLambertMaterial({ color: blueDark }));
+    mirror.position.set(x, 0.96, -0.55); kartObj.add(mirror);
+  }
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.1, 2.6),
+    new THREE.MeshLambertMaterial({ color: trim }));
+  skirt.position.set(0, 0.24, 0.05);
+  const wheelG = new THREE.CylinderGeometry(0.46, 0.46, 0.34, 14);
   wheelG.rotateZ(Math.PI / 2);
   const wheelM = new THREE.MeshLambertMaterial({ color: 0x1c1c1a });
   kartObj.userData.wheels=[];
-  for (const [wx, wz] of [[-0.85,-1.0],[0.85,-1.0],[-0.9,1.05],[0.9,1.05]]) {
-    const pivot=new THREE.Group();pivot.position.set(wx,.42,wz);kartObj.add(pivot);
+  for (const [wx, wz] of [[-0.78,-1.05],[0.78,-1.05],[-0.8,1.1],[0.8,1.1]]) {
+    const pivot=new THREE.Group();pivot.position.set(wx,.46,wz);kartObj.add(pivot);
     const w = new THREE.Mesh(wheelG, wheelM);w.castShadow = true;pivot.add(w);
-    const hub=new THREE.Mesh(new THREE.BoxGeometry(.075,.55,.08),new THREE.MeshLambertMaterial({color:0xd1c49d}));
-    hub.position.x=Math.sign(wx)*.19;w.add(hub);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.08,10),new THREE.MeshLambertMaterial({color:0xcfd2d4}));
+    hub.rotation.z=Math.PI/2;hub.position.x=Math.sign(wx)*.19;w.add(hub);
     kartObj.userData.wheels.push({pivot,mesh:w,front:wz<0});
   }
   kartObj.userData.boostFlames=[];
   for(const x of [-.45,.45]){
     const flame=new THREE.Mesh(new THREE.ConeGeometry(.18,1.25,8),new THREE.MeshBasicMaterial({color:0xadef80,transparent:true,opacity:.85,depthWrite:false}));
-    flame.rotation.x=Math.PI/2;flame.position.set(x,.55,2);flame.visible=false;
+    flame.rotation.x=Math.PI/2;flame.position.set(x,.5,1.9);flame.visible=false;
     kartObj.add(flame);kartObj.userData.boostFlames.push(flame);
   }
-  kartObj.add(body, nose, seat, helmet);
+  kartObj.add(body, hood, hatch, roof, glassBox, grille, skirt);
   scene.add(kartObj);
 }
 

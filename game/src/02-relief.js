@@ -56,4 +56,28 @@ function gradientAt(x, y, e = 3) {
           (heightAt(x, y + e) - heightAt(x, y - e)) / (2 * e)];
 }
 
-function loadDefaultTerrain(){DEM.n=TERRAIN_DATA.n;DEM.h=Float32Array.from(TERRAIN_DATA.h);DEM.real=true;demRange();}
+// The mapped relief arrives on a 176×176 grid (its real IGN sample spacing,
+// 5 m/cell) rendered as just two flat triangles per cell — visibly faceted
+// on the hills. Upsampling it here re-samples that same bilinear surface at
+// 4x the density (2x per axis), so each cell's true curve shows instead of
+// being flattened into two planes. It adds no new real elevation data —
+// heightAt() already interpolates the coarse grid the same way — it only
+// gives the render mesh, and everything draped on it (road, buildings,
+// kerbs), enough triangles to actually show that curve.
+function upsampleGrid(n, h, factor) {
+  const w = n + 1, N = n * factor, dst = new Float32Array((N + 1) * (N + 1));
+  for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+    const fi = i / factor, fj = j / factor;
+    const a = Math.min(n - 1, fi | 0), b = Math.min(n - 1, fj | 0);
+    const tx = fi - a, ty = fj - b;
+    dst[j * (N + 1) + i] =
+      (h[b * w + a] * (1 - tx) + h[b * w + a + 1] * tx) * (1 - ty) +
+      (h[(b + 1) * w + a] * (1 - tx) + h[(b + 1) * w + a + 1] * tx) * ty;
+  }
+  return dst;
+}
+function loadDefaultTerrain(){
+  DEM.n=TERRAIN_DATA.n*2;
+  DEM.h=upsampleGrid(TERRAIN_DATA.n,TERRAIN_DATA.h,2);
+  DEM.real=true;demRange();
+}

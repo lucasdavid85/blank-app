@@ -108,3 +108,9 @@ function fitSurfaceAbove(geometry,surface,clearance){
 function terrainHeightAt(x,y){return surfaceHeightAt(terrainSurface,x,y,heightAt(x,y));}
 function raceHeightAt(x,y){return surfaceHeightAt(raceSurface,x,y,terrainHeightAt(x,y));}
 function drivingHeightAt(x,y){return playMode==='race'?raceHeightAt(x,y):terrainHeightAt(x,y);}
+// Physics slope: goes through the same flat race surface while racing, so the
+// circuit's old small hills no longer speed up or slow down a lap.
+function drivingGradientAt(x,y,e=3){
+  return [(drivingHeightAt(x+e,y)-drivingHeightAt(x-e,y))/(2*e),
+          (drivingHeightAt(x,y+e)-drivingHeightAt(x,y-e))/(2*e)];
+}

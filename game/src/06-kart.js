@@ -83,7 +83,7 @@ function step(dt) {
   // ── the relief acts here ──
   // component of gravity along the heading; uphill bleeds speed, downhill adds it,
   // visit mode can exceed the flat-ground speed; race remains capped.
-  const [gx, gy] = gradientAt(kart.x, kart.y);
+  const [gx, gy] = drivingGradientAt(kart.x, kart.y);
   const alongSlope = gx*hx + gy*hy;                    // rise per metre travelled
   kart.grade = alongSlope;
   fwd -= G * (visiting ? 1 : KART.slopeGain) * alongSlope /
