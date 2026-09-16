@@ -72,8 +72,47 @@ function updateGate(dt,previous){
   el('gate-status').textContent='Gate broken · explore the campus';}
  else{const sign=before<=0?-1:1;kart.x+=f[0]*(sign*(KART.radius+.06)-along);kart.y+=f[1]*(sign*(KART.radius+.06)-along);kart.vx=kart.vy=0;}
 }
+// A low stone wall along the campus's real mapped boundary — the biggest
+// "ground" polygon in the OSM extract, the Parc Valrose outline itself —
+// with a gap left open around the entrance gate so driving in stays clear.
+function campusBoundary(){
+ if(!world.ground.length)return null;
+ return world.ground.reduce((best,p)=>polygonArea(p)>polygonArea(best)?p:best);
+}
+function buildCampusWall(){
+ const boundary=campusBoundary();
+ if(!boundary||boundary.length<3)return;
+ const spacing=3,wallH=2,wallT=.4,gateGap=14;
+ const sections=[];
+ for(let i=0;i<boundary.length-1;i++){
+  const a=boundary[i],b=boundary[i+1],segLen=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  if(!segLen)continue;
+  const count=Math.max(1,Math.round(segLen/spacing));
+  for(let j=0;j<count;j++){
+   const t0=j/count,t1=(j+1)/count;
+   const x0=a[0]+(b[0]-a[0])*t0,y0=a[1]+(b[1]-a[1])*t0,x1=a[0]+(b[0]-a[0])*t1,y1=a[1]+(b[1]-a[1])*t1;
+   const mx=(x0+x1)/2,my=(y0+y1)/2;
+   if(Math.hypot(mx-gate.position[0],my-gate.position[1])<gateGap)continue;
+   const length=Math.hypot(x1-x0,y1-y0);
+   sections.push({x:mx,y:my,a:Math.atan2(x1-x0,-(y1-y0)),length});
+  }
+ }
+ if(!sections.length)return;
+ const stone=new THREE.MeshLambertMaterial({color:0xcfc3a5}),cap=new THREE.MeshLambertMaterial({color:0xb7a984});
+ const wall=new THREE.InstancedMesh(new THREE.BoxGeometry(wallT,wallH,1),stone,sections.length);
+ const capstones=new THREE.InstancedMesh(new THREE.BoxGeometry(wallT+.14,.16,1),cap,sections.length);
+ wall.castShadow=true;wall.receiveShadow=true;capstones.castShadow=true;
+ const dummy=new THREE.Object3D();
+ sections.forEach((s,i)=>{
+  const h=heightAt(s.x,s.y);
+  dummy.position.set(s.x,h+wallH/2,-s.y);dummy.rotation.set(0,s.a,0);dummy.scale.set(1,1,s.length+.1);dummy.updateMatrix();
+  wall.setMatrixAt(i,dummy.matrix);
+  dummy.position.y=h+wallH+.08;dummy.updateMatrix();capstones.setMatrixAt(i,dummy.matrix);
+ });
+ landmarkGroup.add(wall,capstones);
+}
 function buildLandmarks(){
- clearGroup(landmarkGroup);landmarkGroup=new THREE.Group();scene.add(landmarkGroup);buildGate();
+ clearGroup(landmarkGroup);landmarkGroup=new THREE.Group();scene.add(landmarkGroup);buildGate();buildCampusWall();
  const lake=world.water.find(w=>w.properties.waterKind==='lake');
  if(lake?.holes?.length){const island=lake.holes[0],center=island.slice(0,-1).reduce((s,q)=>[s[0]+q[0]/(island.length-1),s[1]+q[1]/(island.length-1)],[0,0]),level=Math.max(waterLevel(lake)+.3,heightAt(...center)),group=new THREE.Group();group.position.set(center[0],level,-center[1]);landmarkGroup.add(group);
  for(const x of [-.65,.65])for(const z of [-.65,.65])box(group,.12,1.4,.12,x,.9,z,0x82624b);const shelter=new THREE.Mesh(new THREE.ConeGeometry(1.45,.95,4),new THREE.MeshLambertMaterial({color:0x766454}));shelter.position.y=1.95;shelter.rotation.y=Math.PI/4;group.add(shelter);

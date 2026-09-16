@@ -29,6 +29,7 @@ function initThree() {
   const sc = sun.shadow.camera;
   sc.left = -260; sc.right = 260; sc.top = 260; sc.bottom = -260; sc.near = 10; sc.far = 700;
   scene.add(sun, sun.target);
+  buildSky();
 
   buildingGroup = new THREE.Group();
   treeGroup = new THREE.Group();
@@ -46,6 +47,54 @@ function onResize() {
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+}
+
+/* ---- sky: a gradient dome, a sun disc, and a handful of low-poly clouds ---- */
+function buildSky() {
+  const zenith = new THREE.Color(0x2f6fb0), horizon = new THREE.Color(0xdceefa);
+  scene.fog.color.copy(horizon);
+  scene.background = horizon.clone();
+
+  const domeR = 900;
+  const domeGeo = new THREE.SphereGeometry(domeR, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2 * 1.02);
+  const pos = domeGeo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.pow(Math.max(0, pos.getY(i) / domeR), 0.55);
+    c.copy(horizon).lerp(zenith, t);
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+  }
+  domeGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const dome = new THREE.Mesh(domeGeo,
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+  dome.renderOrder = -10;
+  scene.add(dome);
+
+  const sunDir = sun.position.clone().normalize();
+  const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial(
+    { color: 0xfff3d6, transparent: true, opacity: .92, depthWrite: false, fog: false }));
+  sunSprite.scale.set(95, 95, 1);
+  sunSprite.position.copy(sunDir).multiplyScalar(domeR * .92);
+  scene.add(sunSprite);
+
+  let seed = 90210;
+  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xfbfdff });
+  const cloudGroup = new THREE.Group();
+  for (let i = 0; i < 16; i++) {
+    const angle = random() * Math.PI * 2, dist = 260 + random() * 480, h = 130 + random() * 90;
+    const puffGroup = new THREE.Group();
+    puffGroup.position.set(Math.cos(angle) * dist, h, Math.sin(angle) * dist);
+    puffGroup.rotation.y = random() * Math.PI * 2;
+    const puffs = 3 + Math.floor(random() * 3);
+    for (let k = 0; k < puffs; k++) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(6 + random() * 5, 7, 6), cloudMat);
+      puff.position.set((random() - .5) * 16, (random() - .5) * 3, (random() - .5) * 10);
+      puff.scale.y = .55;
+      puffGroup.add(puff);
+    }
+    cloudGroup.add(puffGroup);
+  }
+  scene.add(cloudGroup);
 }
 
 /* ---- terrain ---- */

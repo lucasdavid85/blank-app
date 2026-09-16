@@ -82,7 +82,7 @@ function measureLine() {
   world.length = world.cum[world.cum.length - 1] || 1;
 }
 
-const TRACK_W = 3.2; // half-width — the park alleys really are this narrow
+const TRACK_W = 4; // half-width — widened from the alleys' native 3.2m for a roomier circuit
 
 function onLine(px, py, sHint) {
   const L = world.line;

@@ -330,7 +330,7 @@
 <aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">University Library</option><option value="2">University Restaurant</option><option value="3">Montebello Residence</option><option value="4">Petit Château</option><option value="5">Chemistry · ICN</option><option value="6">Sports Center</option><option value="7">Park Lake</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Next place</button><p>Free driving · no speed limiter<br>Arrow keys or WASD · Space for the handbrake</p></aside><div id="panel" class="min">
   <button id="hidepanel" title="Show settings" aria-label="Show settings" aria-expanded="false">+</button>
   <h1>Valrose Campus</h1>
-  <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
+  <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><button class="btn" id="toggle-music" aria-pressed="false">Music: off</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
     <div class="sub" id="datasrc">GPX relief · real OSM campus</div>
     <div class="keys">
       <div><b>↑ ↓ ← →</b>drive</div>
@@ -389,6 +389,7 @@
   <script src="src/16-geese.js"></script>
   <script src="src/17-sharing.js"></script>
   <script src="src/18-racing.js"></script>
+  <script src="src/19-music.js"></script>
   <script src="streamlit-bridge.js"></script>
   <script src="src/11-boot.js"></script>
 </body>
