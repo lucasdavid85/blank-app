@@ -37,7 +37,7 @@ function initThree() {
   skidGroup = new THREE.Group();
   scene.add(buildingGroup, treeGroup, pathGroup, skidGroup);
 
-  buildKart();buildRaceEffects();
+  buildKart();buildRaceEffects();buildSplashEffects();
   onResize();
   addEventListener("resize", onResize);
 }

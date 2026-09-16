@@ -126,7 +126,24 @@ function emitRailSparks(x,y,nx,ny){
       vx:-nx*(2+i*.2)+Math.cos(angle)*1.5,vy:2+i*.3,vz:ny*(2+i*.2)+Math.sin(angle)*1.5});
   }
 }
-function resetRaceEffects(){for(const spark of railSparks)spark.life=0;if(railSparkMesh)railSparkMesh.visible=false;}
+function resetRaceEffects(){for(const spark of railSparks)spark.life=0;if(railSparkMesh)railSparkMesh.visible=false;if(splashMesh)splashMesh.visible=false;for(const drop of waterSplashes)drop.life=0;}
+
+const waterSplashes=Array.from({length:40},()=>({life:0,x:0,y:0,z:0,vx:0,vy:0,vz:0}));
+let splashMesh=null,splashCursor=0;
+function buildSplashEffects(){
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(waterSplashes.length*3),3));
+  splashMesh=new THREE.Points(geometry,new THREE.PointsMaterial({color:0xe7f6fb,size:.16,transparent:true,opacity:.85,depthWrite:false}));
+  splashMesh.frustumCulled=false;splashMesh.visible=false;scene.add(splashMesh);
+}
+function emitSplash(x,y,level,speed){
+  const count=Math.min(9,3+Math.floor(speed*.35));
+  for(let i=0;i<count;i++){
+    const drop=waterSplashes[splashCursor++%waterSplashes.length],angle=Math.random()*Math.PI*2,spread=.8+Math.random()*1.8;
+    Object.assign(drop,{life:.35+Math.random()*.3,x:x+Math.cos(angle)*.35,y:level+.08,z:-(y+Math.sin(angle)*.35),
+      vx:Math.cos(angle)*spread,vy:1.8+Math.random()*2.2,vz:Math.sin(angle)*spread});
+  }
+}
 function updateRacingVisuals(dt,now){
   const speed=Math.hypot(kart.vx,kart.vy);
   kart.wheelSpin=(kart.wheelSpin+speed*dt/.42)%(Math.PI*2);
@@ -138,13 +155,23 @@ function updateRacingVisuals(dt,now){
     flame.visible=playMode==='race'&&kart.boosting&&!race.finished;
     flame.scale.y=.75+speed/45+Math.sin(now*.027+flame.position.x)*.12;
   }
-  if(!railSparkMesh)return;
-  const attribute=railSparkMesh.geometry.attributes.position;let count=0;
-  for(const spark of railSparks){
-    if(spark.life<=0)continue;
-    spark.life-=dt;spark.vy-=18*dt;spark.x+=spark.vx*dt;spark.y+=spark.vy*dt;spark.z+=spark.vz*dt;
-    spark.y=Math.max(heightAt(spark.x,-spark.z)+.3,spark.y);
-    attribute.setXYZ(count++,spark.x,spark.y,spark.z);
+  if(railSparkMesh){
+    const attribute=railSparkMesh.geometry.attributes.position;let count=0;
+    for(const spark of railSparks){
+      if(spark.life<=0)continue;
+      spark.life-=dt;spark.vy-=18*dt;spark.x+=spark.vx*dt;spark.y+=spark.vy*dt;spark.z+=spark.vz*dt;
+      spark.y=Math.max(heightAt(spark.x,-spark.z)+.3,spark.y);
+      attribute.setXYZ(count++,spark.x,spark.y,spark.z);
+    }
+    attribute.needsUpdate=true;railSparkMesh.geometry.setDrawRange(0,count);railSparkMesh.visible=playMode==='race'&&count>0;
   }
-  attribute.needsUpdate=true;railSparkMesh.geometry.setDrawRange(0,count);railSparkMesh.visible=playMode==='race'&&count>0;
+  if(splashMesh){
+    const attribute=splashMesh.geometry.attributes.position;let count=0;
+    for(const drop of waterSplashes){
+      if(drop.life<=0)continue;
+      drop.life-=dt;drop.vy-=16*dt;drop.x+=drop.vx*dt;drop.y+=drop.vy*dt;drop.z+=drop.vz*dt;
+      attribute.setXYZ(count++,drop.x,drop.y,drop.z);
+    }
+    attribute.needsUpdate=true;splashMesh.geometry.setDrawRange(0,count);splashMesh.visible=playMode==='visit'&&count>0;
+  }
 }

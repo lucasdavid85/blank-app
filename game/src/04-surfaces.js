@@ -107,7 +107,13 @@ function fitSurfaceAbove(geometry,surface,clearance){
 }
 function terrainHeightAt(x,y){return surfaceHeightAt(terrainSurface,x,y,heightAt(x,y));}
 function raceHeightAt(x,y){return surfaceHeightAt(raceSurface,x,y,terrainHeightAt(x,y));}
-function drivingHeightAt(x,y){return playMode==='race'?raceHeightAt(x,y):terrainHeightAt(x,y);}
+function drivingHeightAt(x,y){
+  if(playMode==='race')return raceHeightAt(x,y);
+  // Visiting: float on the surface instead of the sunken lake bed underneath,
+  // so driving into the water settles the kart at the waterline, not on it.
+  for(const w of world.water)if(inWater(x,y,w))return waterLevel(w)-.1;
+  return terrainHeightAt(x,y);
+}
 // Physics slope: goes through the same flat race surface while racing, so the
 // circuit's old small hills no longer speed up or slow down a lap.
 function drivingGradientAt(x,y,e=3){

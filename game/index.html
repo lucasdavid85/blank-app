@@ -58,7 +58,20 @@
   #mini{position:fixed;left:clamp(10px,4vw,22px);bottom:clamp(10px,4vw,22px);
     width:clamp(96px,30vmin,236px);height:clamp(96px,30vmin,236px);
     border:1px solid rgba(243,239,228,.2);border-radius:3px;background:rgba(10,18,14,.55);
-    backdrop-filter:blur(4px)}
+    backdrop-filter:blur(4px);cursor:pointer}
+
+  #mini-controls{position:fixed;left:clamp(10px,4vw,22px);bottom:clamp(10px,4vw,22px);
+    width:clamp(96px,30vmin,236px);height:clamp(96px,30vmin,236px);pointer-events:none;z-index:6;display:none}
+  body.visiting #mini-controls{display:block}
+  #mini-controls button{position:absolute;top:4px;pointer-events:auto;width:22px;height:22px;border-radius:3px;
+    border:1px solid rgba(243,239,228,.35);background:rgba(10,18,14,.8);color:#f3efe4;font-size:15px;line-height:1;
+    cursor:pointer;padding:0}
+  #mini-controls button:active{background:rgba(243,239,228,.25)}
+  #mini-zoom-in{right:4px} #mini-zoom-out{right:30px}
+  #mini-tag{position:absolute;left:4px;right:4px;bottom:4px;pointer-events:none;background:rgba(10,18,14,.82);
+    border:1px solid rgba(243,239,228,.25);border-radius:3px;padding:4px 7px;font-size:11.5px;line-height:1.3;
+    color:#eef4ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #mini-tag[hidden]{display:none}
 
   #panel{position:fixed;z-index:20;top:max(18px,env(safe-area-inset-top));right:max(clamp(10px,4vw,22px),env(safe-area-inset-right));width:clamp(168px,50vw,246px);font-size:12.5px;line-height:1.5;
     background:rgba(15,24,19,.86);border:1px solid rgba(243,239,228,.15);border-radius:4px;
@@ -147,6 +160,7 @@
   .tbtn.on,.tbtn:active{background:var(--gold);color:var(--ink)}
   #t-hand{font-size:12px;font-weight:700}
   body.touch #mini{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-size) + 18px);width:clamp(96px,26vmin,132px);height:clamp(96px,26vmin,132px)}
+  body.touch #mini-controls{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-size) + 18px);width:clamp(96px,26vmin,132px);height:clamp(96px,26vmin,132px)}
   body.touch.visiting #grade,body.touch.visiting #alt{display:none}
   body.map-open #mobile-dock,body.map-open #mode-switch,body.map-open #goose-notice{display:none}
   body.race-finished #mobile-dock,body.race-finished #panel,body.race-finished #mode-switch,body.race-finished #goose-notice{display:none}
@@ -258,6 +272,11 @@
 <body>
 <canvas id="gl"></canvas>
 <canvas id="mini" width="472" height="472"></canvas>
+<div id="mini-controls">
+  <button id="mini-zoom-out" type="button" aria-label="Zoom map out">−</button>
+  <button id="mini-zoom-in" type="button" aria-label="Zoom map in">+</button>
+  <div id="mini-tag" hidden></div>
+</div>
 
 <div class="hud" id="timing">
   <div id="clock">0:00.00</div>

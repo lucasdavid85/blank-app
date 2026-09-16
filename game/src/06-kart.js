@@ -16,7 +16,7 @@ const KART = {
 };
 const G = 9.81;
 
-const kart = { x: 0, y: 0, a: 0, vx: 0, vy: 0, offroad: false, slip: 0, grade: 0, alt: 0 };
+const kart = { x: 0, y: 0, a: 0, vx: 0, vy: 0, offroad: false, wet: false, slip: 0, grade: 0, alt: 0 };
 const race = { s: 0, progress: 0, lap: 1, t: 0, best: null, running: false,
   finished: false, results: [], lastTick: null, course: '', boosts: 0, railHits: 0 };
 const skids = [];
@@ -28,7 +28,7 @@ function resetKart() {
     kart.a = Math.atan2(L[1][0]-L[0][0], L[1][1]-L[0][1]);
   } else { kart.x = kart.y = 0; kart.a = 0; }
   if(gate.group){[kart.x,kart.y]=gateSpawn();kart.a=Math.atan2(...gate.forward);resetGate();}
-  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false;
+  kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false; kart.wet = false; kart.splashTimer = 0;
   kart.steering=0;kart.wheelSpin=0;kart.railContact=false;cancelCenterBoost();
   race.boosts=0;race.railHits=0;resetRaceEffects();
   race.s = onLine(kart.x, kart.y).s;
@@ -73,6 +73,10 @@ function step(dt) {
 
   const near = onLine(kart.x, kart.y, race.running ? race.s : null);
   kart.offroad = visiting && near.dist > TRACK_W;
+  // Visiting lets you drive straight into the lake — wading through it costs
+  // grip and speed instead of the hard wall the race circuit still has.
+  const water = visiting ? world.water.find(w => inWater(kart.x, kart.y, w)) : null;
+  kart.wet = !!water;
   const launching = !visiting && !race.running;
   const canAccelerate=throttle&&!braking&&!hand&&fwd>=0&&alignedWithCircuit(hx,hy,near.s);
   updateCenterBoost(dt,near.dist<=KART.boostHalfWidth,canAccelerate);
@@ -102,6 +106,7 @@ function step(dt) {
   lat *= Math.pow(grip, dt*60);
   fwd *= Math.pow(KART.drag, dt*60);
   if (hand) fwd *= Math.pow(0.985, dt*60);
+  if (water) { fwd *= Math.pow(.88, dt*60); lat *= Math.pow(.88, dt*60); }
 
   kart.slip = Math.abs(lat);
   kart.vx = hx*fwd + rx*lat;
@@ -115,8 +120,14 @@ function step(dt) {
   kart.x = Math.max(-HALF+5, Math.min(HALF-5, kart.x));
   kart.y = Math.max(-HALF+5, Math.min(HALF-5, kart.y));
 
-  if(!visiting)updateGate(dt,previous);
-  for(const water of world.water)if(inWater(kart.x,kart.y,water)){[kart.x,kart.y]=previous;kart.vx=kart.vy=0;break;}
+  if (!visiting) {
+    updateGate(dt,previous);
+    for(const w of world.water)if(inWater(kart.x,kart.y,w)){[kart.x,kart.y]=previous;kart.vx=kart.vy=0;break;}
+  } else if (water) {
+    kart.splashTimer = (kart.splashTimer||0) - dt;
+    const speed = Math.hypot(kart.vx,kart.vy);
+    if (kart.splashTimer <= 0 && speed > 1) { emitSplash(kart.x, kart.y, waterLevel(water), speed); kart.splashTimer = .07; }
+  } else kart.splashTimer = 0;
 
   // Resolve every wall in one go. Doing them one at a time made the kart
   // ping-pong between the two buildings the alley threads past, and the
