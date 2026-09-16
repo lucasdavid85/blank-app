@@ -273,7 +273,14 @@ function buildBuildings() {
   }
   const stone = new THREE.MeshLambertMaterial({ color: 0xe0dfd8 });  // pale concrete
   const clay  = new THREE.MeshLambertMaterial({ color: 0xdcd0ac });  // château, cream not red
-  const roof  = new THREE.MeshLambertMaterial({ color: 0x6a6b66 });
+  const roof  = new THREE.MeshLambertMaterial({ color: 0x6a6b66 });  // flat institutional roofing
+  const tile  = new THREE.MeshLambertMaterial({ color: 0xac6c45 });  // terracotta, the surrounding houses' actual roofs
+  // The aerial photo shows two roof families, not one: pale flat roofs over
+  // the campus buildings proper, warm clay tile everywhere else nearby —
+  // matched here by OSM's own building tag, since most footprints only carry
+  // the generic "yes" (i.e. ordinary houses OpenStreetMap never re-tagged).
+  const institutional = tag => /^(university|college|school|sports_centre|public|civic|government)$/.test(tag||'');
+  function buildingSeed(b) { let h=0; for (const [x,y] of b.poly) h=((h*31+Math.round(x*10))|0)*31+Math.round(y*10)|0; return ((h>>>0)%1000)/1000; }
 
   for (const b of world.buildings) {
     if (b.poly.length < 3) continue;
@@ -299,12 +306,15 @@ function buildBuildings() {
     mesh.userData.building = b;
     buildingGroup.add(mesh);
     // a flat cap in a different tone reads as a roof from the chase camera
+    const roofBase = (b.landmark || institutional(b.properties.building)) ? roof : tile;
+    const jitter = buildingSeed(b) - 0.5;
+    const roofMat = new THREE.MeshLambertMaterial({ color: roofBase.color.clone().offsetHSL(0, jitter*.05, jitter*.12) });
     const cap = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: false }), roof);
+      new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: false }), roofMat);
     cap.geometry.rotateX(-Math.PI / 2);
     cap.geometry.translate(0, base - 1.5 + lift + foundation + H, 0);
     cap.castShadow = true;
-    if(grand){cap.geometry.dispose(); addCastleRoof(b,base-1.5+lift+H,totalHeight-H,roof); } else buildingGroup.add(cap);
+    if(grand){cap.geometry.dispose(); addCastleRoof(b,base-1.5+lift+H,totalHeight-H,roofMat); } else buildingGroup.add(cap);
     addFacade(b,base-1.5+lift+foundation,H);
     if(grand)addCastleDetails(b,base-1.5+lift,H,totalHeight-H);
   }
