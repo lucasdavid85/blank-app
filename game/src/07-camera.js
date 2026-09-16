@@ -25,9 +25,15 @@ function placeKart() {
 }
 
 function keepCameraAboveTerrain(position,clearance) {
-  position.y=Math.max(position.y,heightAt(position.x,-position.z)+clearance);
+  // drivingHeightAt, not the raw terrain — the paved circuit is smoothed off
+  // the ground it's draped on, so during a race the camera has to clear the
+  // asphalt itself, not just whatever grass happens to be underneath it.
+  position.y=Math.max(position.y,drivingHeightAt(position.x,-position.z)+clearance);
 }
 function clearCameraSightline(position) {
+  // Raw terrain on purpose: keepCameraAboveTerrain (below) already guarantees
+  // the camera clears the track surface itself, so this pass is only about
+  // hills between the camera and the kart, not the asphalt's own height.
   const target=new THREE.Vector3(kart.x,heightAt(kart.x,kart.y)+1.3,-kart.y);
   for(let i=1;i<=12;i++){
     const t=i/13,x=position.x+(target.x-position.x)*t,z=position.z+(target.z-position.z)*t;
@@ -45,8 +51,8 @@ function cameraOffsets(speed){
 function resetCameraView(){
   camHeading=kart.a;const [back,up]=cameraOffsets(0);
   const x=kart.x-Math.sin(kart.a)*back,y=kart.y-Math.cos(kart.a)*back;
-  camPos.set(x,heightAt(x,y)+up,-y);
-  camAim.set(kart.x+Math.sin(kart.a)*10,heightAt(kart.x,kart.y)+1.6,-kart.y-Math.cos(kart.a)*10);
+  camPos.set(x,drivingHeightAt(x,y)+up,-y);
+  camAim.set(kart.x+Math.sin(kart.a)*10,drivingHeightAt(kart.x,kart.y)+1.6,-kart.y-Math.cos(kart.a)*10);
 }
 function updateCamera(dt) {
   const speed = Math.hypot(kart.vx, kart.vy);
@@ -54,12 +60,12 @@ function updateCamera(dt) {
   const turn=Math.atan2(Math.sin(kart.a-camHeading),Math.cos(kart.a-camHeading));
   camHeading+=turn*(camMode===2?1:1-Math.exp(-8*dt));
   const behindX=kart.x-Math.sin(camHeading)*back,behindY=kart.y-Math.cos(camHeading)*back;
-  const want = new THREE.Vector3(behindX,heightAt(behindX,behindY)+up,-behindY);
+  const want = new THREE.Vector3(behindX,drivingHeightAt(behindX,behindY)+up,-behindY);
   const k = 1 - Math.pow(0.0016, dt);
   camPos.lerp(want, camMode === 2 ? 1 : k);
   const ahead=camMode===2?10:10+Math.min(4,speed*.12),side=camMode===2?0:(kart.steering||0)*1.8;
   const lookX=kart.x+Math.sin(kart.a)*ahead+Math.cos(kart.a)*side,lookY=kart.y+Math.cos(kart.a)*ahead-Math.sin(kart.a)*side;
-  const aimHeight=Math.max(heightAt(kart.x,kart.y)+1.6,heightAt(lookX,lookY)+.6);
+  const aimHeight=Math.max(drivingHeightAt(kart.x,kart.y)+1.6,drivingHeightAt(lookX,lookY)+.6);
   camAim.lerp(new THREE.Vector3(lookX,aimHeight,-lookY),camMode === 2 ? 1 : k);
   keepCameraAboveTerrain(camPos,camMode === 2 ? .75 : 1.4);
   if(camMode !== 2)clearCameraSightline(camPos);
