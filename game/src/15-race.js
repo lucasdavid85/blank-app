@@ -146,6 +146,7 @@ function finishRace() {
   el('finish-details').textContent=result.boosts+' boost'+(result.boosts===1?'':'s')+' · '+result.railHits+' rail contact'+(result.railHits===1?'':'s');
   raceStart.goUntil=0;el('race-countdown').hidden=true;
   renderScores();
+  currentPodiumEntry=recordPodiumResult(result);renderPodium();
   queueResultPicture();
   el('finish').hidden=false;document.body?.classList.add('race-finished');
   el('race-again').focus?.();hud();

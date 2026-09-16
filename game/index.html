@@ -176,6 +176,20 @@
   .finish-card td{padding:10px 0;border-top:1px solid #d5dbcd}
   .finish-card td:last-child,.finish-card th:last-child{text-align:right;font-family:ui-monospace,monospace}
   .finish-card tr.current{color:#8a4a30;font-weight:700}
+  .podium-caption{font-weight:650;margin-bottom:10px}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:0 0 20px}
+  .podium-slot{display:flex;flex-direction:column;align-items:center;width:32%}
+  .podium-plate{background:#fffdf6;border:1px solid #d5dbcd;border-radius:8px 8px 0 0;padding:8px 5px;width:100%;
+    min-height:44px;text-align:center;box-sizing:border-box}
+  .podium-name{display:block;font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .podium-time{display:block;font-family:ui-monospace,monospace;font-size:12.5px;color:#576d58;margin-top:2px}
+  .podium-block{width:100%;border-radius:0 0 6px 6px;display:flex;align-items:flex-start;justify-content:center;
+    padding-top:6px;font-weight:800;font-size:19px;color:#fff;box-sizing:border-box}
+  #podium-1 .podium-block{height:62px;background:linear-gradient(#ecca57,#c9a53a)}
+  #podium-2 .podium-block{height:44px;background:linear-gradient(#d4dade,#a7aeb4)}
+  #podium-3 .podium-block{height:32px;background:linear-gradient(#e0a56e,#b57340)}
+  .podium-slot.empty .podium-plate{opacity:.4}
+  .podium-slot.empty .podium-name{font-weight:400}
   .finish-actions{display:flex;gap:10px}
   .finish-actions button{flex:1;min-height:48px;border:1px solid #a3b19c;border-radius:8px;font:600 15px system-ui;cursor:pointer;color:var(--ink);background:transparent}
   #race-again{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -309,6 +323,12 @@
     <div class="eyebrow">Valrose circuit</div>
     <h2 id="finish-title">Lap complete!</h2>
     <p id="finish-time" role="status"></p><p id="finish-best"></p><p id="finish-details"></p>
+    <div class="podium-caption">Podium · all-time best on this circuit</div>
+    <div class="podium" id="podium">
+      <div class="podium-slot empty" id="podium-2"><div class="podium-plate"><span class="podium-name" id="podium-2-name">—</span><span class="podium-time" id="podium-2-time"></span></div><div class="podium-block">2</div></div>
+      <div class="podium-slot empty" id="podium-1"><div class="podium-plate"><span class="podium-name" id="podium-1-name">—</span><span class="podium-time" id="podium-1-time"></span></div><div class="podium-block">1</div></div>
+      <div class="podium-slot empty" id="podium-3"><div class="podium-plate"><span class="podium-name" id="podium-3-name">—</span><span class="podium-time" id="podium-3-time"></span></div><div class="podium-block">3</div></div>
+    </div>
     <table><caption>Your best laps this session</caption><thead><tr><th scope="col">Rank</th><th scope="col">Driver</th><th scope="col">Time</th></tr></thead><tbody id="score-rows"></tbody></table>
     <div class="result-share">
       <label for="driver-name">Your name</label>

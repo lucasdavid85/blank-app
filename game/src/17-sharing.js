@@ -13,6 +13,41 @@ function renderScores() {
   const best=race.results.slice().sort((a,b)=>a.time-b.time).slice(0,5);
   el('score-rows').innerHTML=best.map((r,i)=>'<tr'+(r===race.currentResult?' class="current"':'')+'><td>'+(i+1)+'</td><td>'+escapeResultText(r.name||'Driver')+'<small>Lap '+r.lap+'</small></td><td>'+fmt(r.time)+'</td></tr>').join('');
 }
+
+// The podium persists across visits (localStorage — there's no server here to
+// write a real file to), keyed to the current circuit's shape so editing the
+// track doesn't mix its times in with a different layout's.
+const PODIUM_KEY='valroseKartPodium', PODIUM_KEEP=10;
+let podiumEntries=[], currentPodiumEntry=null;
+function loadPodium() {
+  try {
+    const data=JSON.parse(localStorage.getItem(PODIUM_KEY));
+    if(!data||data.course!==race.course||!Array.isArray(data.entries))return [];
+    return data.entries.filter(e=>e&&typeof e.name==='string'&&isFinite(e.time));
+  } catch { return []; }
+}
+function savePodium() {
+  try { localStorage.setItem(PODIUM_KEY,JSON.stringify({course:race.course,entries:podiumEntries})); } catch {}
+}
+function recordPodiumResult(result) {
+  const entry={name:result.name,time:result.time,lap:result.lap};
+  podiumEntries.push(entry);
+  podiumEntries.sort((a,b)=>a.time-b.time);
+  podiumEntries.length=Math.min(podiumEntries.length,PODIUM_KEEP);
+  savePodium();
+  return podiumEntries.includes(entry)?entry:null;
+}
+function renderPodium() {
+  const top3=podiumEntries.slice(0,3);
+  for(let place=1;place<=3;place++){
+    const slot=el('podium-'+place);
+    if(!slot)continue;
+    const entry=top3[place-1];
+    slot.classList.toggle('empty',!entry);
+    el('podium-'+place+'-name').textContent=entry?(entry.name||'Driver'):'—';
+    el('podium-'+place+'-time').textContent=entry?fmt(entry.time):'';
+  }
+}
 function clearResultPicture() {
   resultImageVersion++;resultCapturePending=false;resultPhoto=null;resultImageBlob=null;
   if(resultImageUrl){URL.revokeObjectURL(resultImageUrl);resultImageUrl=null;}
@@ -128,6 +163,7 @@ async function shareResult() {
 el('driver-name').addEventListener('input',()=>{
   if(!race.currentResult||!race.finished)return;
   race.currentResult.name=driverName();renderScores();
+  if(currentPodiumEntry){currentPodiumEntry.name=driverName();savePodium();renderPodium();}
   if(!resultCapturePending)prepareResultImage();
 });
 el('share-result').addEventListener('click',shareResult);

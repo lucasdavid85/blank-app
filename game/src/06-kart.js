@@ -33,7 +33,10 @@ function resetKart() {
   race.boosts=0;race.railHits=0;resetRaceEffects();
   race.s = onLine(kart.x, kart.y).s;
   const course = JSON.stringify(world.line);
-  if (race.course !== course) { race.best = null; race.results.length = 0; race.course = course; }
+  if (race.course !== course) {
+    race.best = null; race.results.length = 0; race.course = course;
+    podiumEntries = loadPodium(); currentPodiumEntry = null; renderPodium();
+  }
   race.progress = 0; race.lap = race.results.length + 1; race.t = 0;
   race.running = false; race.finished = false; race.lastTick = null; race.currentResult = null;
   closeFinish(); clearTouchControls(); keys.clear(); resetGeese();
