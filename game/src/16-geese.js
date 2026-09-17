@@ -94,7 +94,7 @@ function updateGeese(dt) {
       if(distance<KART.radius+.65&&gooseHitCooldown<=0){
         // A comic bump, with brief immunity so one attack cannot repeatedly stop you.
         kart.vx*=.68;kart.vy*=.68;cancelCenterBoost();gooseHitCooldown=1.5;g.timer=0;
-        gooseNotice('Honk! You got a goose bump!');
+        gooseNotice('Honk! You got a goose bump!');playGooseHonk();
       }
       if(g.timer<=0){g.state='return';g.timer=0;}
     }else if(g.state==='return'){

@@ -163,7 +163,7 @@ function updateRacingVisuals(dt,now){
       spark.y=Math.max(heightAt(spark.x,-spark.z)+.3,spark.y);
       attribute.setXYZ(count++,spark.x,spark.y,spark.z);
     }
-    attribute.needsUpdate=true;railSparkMesh.geometry.setDrawRange(0,count);railSparkMesh.visible=playMode==='race'&&count>0;
+    attribute.needsUpdate=true;railSparkMesh.geometry.setDrawRange(0,count);railSparkMesh.visible=count>0;
   }
   if(splashMesh){
     const attribute=splashMesh.geometry.attributes.position;let count=0;

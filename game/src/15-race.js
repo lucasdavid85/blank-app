@@ -1,6 +1,69 @@
 /* Circuit guardrails, a real elapsed-time clock, and the finish scoreboard. */
 let barrierGroup = null;
 
+/* A real perimeter wall around the campus, mainly for Visit mode: the race
+   circuit's own rails already keep the kart contained while racing, but
+   free-roaming visitors had nothing solid at the world edge before this —
+   just an invisible position clamp. */
+const WALL_LIMIT = HALF - 4;
+const WALL_POLY = [[-WALL_LIMIT,-WALL_LIMIT],[WALL_LIMIT,-WALL_LIMIT],[WALL_LIMIT,WALL_LIMIT],[-WALL_LIMIT,WALL_LIMIT]];
+let wallGroup = null;
+
+function applyBoundaryWall() {
+  const wasTouching = kart.wallContact; kart.wallContact = false;
+  const c = closestOnPoly(kart.x, kart.y, WALL_POLY);
+  const escaped = !pointInPoly(kart.x, kart.y, WALL_POLY);
+  if (!escaped && c.dist >= KART.radius) return;
+  let nx = kart.x - c.x, ny = kart.y - c.y;
+  const n = Math.hypot(nx, ny) || 1; nx /= n; ny /= n;
+  if (escaped) { nx = -nx; ny = -ny; }
+  const depth = escaped ? c.dist + KART.radius : KART.radius - c.dist;
+  kart.x += nx * depth; kart.y += ny * depth;
+  kart.wallContact = true;
+  const outward = kart.vx*nx + kart.vy*ny;
+  if (outward > 0) { kart.vx -= outward*nx; kart.vy -= outward*ny; }
+  kart.vx *= 0.9; kart.vy *= 0.9;
+  if (outward > 1 && !wasTouching) emitRailSparks(kart.x, kart.y, nx, ny);
+}
+
+function buildBoundaryWall() {
+  clearGroup(wallGroup);
+  wallGroup = new THREE.Group(); scene.add(wallGroup);
+  wallGroup.visible = playMode === 'visit';
+  const spacing = 6, wallHeight = 2.3, thickness = 0.45;
+  const sides = [
+    [[-WALL_LIMIT,-WALL_LIMIT],[WALL_LIMIT,-WALL_LIMIT]],
+    [[WALL_LIMIT,-WALL_LIMIT],[WALL_LIMIT,WALL_LIMIT]],
+    [[WALL_LIMIT,WALL_LIMIT],[-WALL_LIMIT,WALL_LIMIT]],
+    [[-WALL_LIMIT,WALL_LIMIT],[-WALL_LIMIT,-WALL_LIMIT]],
+  ];
+  const sections = [];
+  for (const [from, to] of sides) {
+    const dx = to[0]-from[0], dy = to[1]-from[1], length = Math.hypot(dx,dy);
+    const ux = dx/length, uy = dy/length, a = Math.atan2(dx,-dy);
+    for (let s=0; s<length; s+=spacing) {
+      const segLength = Math.min(spacing, length-s);
+      const cx = from[0]+ux*(s+segLength/2), cy = from[1]+uy*(s+segLength/2);
+      sections.push({x:cx, y:cy, a, length:segLength+.12});
+    }
+  }
+  const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(thickness,wallHeight,1),
+    new THREE.MeshLambertMaterial({color:0xb7ab8c}), sections.length);
+  const capMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(thickness+.14,.16,1),
+    new THREE.MeshLambertMaterial({color:0x8d8265}), sections.length);
+  const dummy = new THREE.Object3D();
+  sections.forEach((p,i)=>{
+    const base = heightAt(p.x,p.y);
+    dummy.position.set(p.x, base+wallHeight/2, -p.y);
+    dummy.rotation.set(0,p.a,0); dummy.scale.set(1,1,p.length); dummy.updateMatrix();
+    wallMesh.setMatrixAt(i,dummy.matrix);
+    dummy.position.y = base+wallHeight+.08; dummy.updateMatrix();
+    capMesh.setMatrixAt(i,dummy.matrix);
+  });
+  wallMesh.castShadow = true; wallMesh.receiveShadow = true; capMesh.receiveShadow = true;
+  wallGroup.add(wallMesh, capMesh);
+}
+
 function circuitContact(x, y) {
   const near = onLine(x, y, race.running ? race.s : null);
   const center = world.line.length > 1 ? pointAtS(near.s) : [x, y];

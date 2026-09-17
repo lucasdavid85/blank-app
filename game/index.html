@@ -162,9 +162,19 @@
   body.touch #mini{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-size) + 18px);width:clamp(96px,26vmin,132px);height:clamp(96px,26vmin,132px)}
   body.touch #mini-controls{bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--pad-size) + 18px);width:clamp(96px,26vmin,132px);height:clamp(96px,26vmin,132px)}
   body.touch.visiting #grade,body.touch.visiting #alt{display:none}
-  body.map-open #mobile-dock,body.map-open #mode-switch,body.map-open #goose-notice{display:none}
-  body.race-finished #mobile-dock,body.race-finished #panel,body.race-finished #mode-switch,body.race-finished #goose-notice{display:none}
-  #finish{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:rgba(7,18,14,.72);backdrop-filter:blur(6px);overflow:auto}
+  body.map-open #mobile-dock,body.map-open #mode-switch,body.map-open #goose-notice,body.map-open #quick-actions{display:none}
+  body.race-finished #mobile-dock,body.race-finished #panel,body.race-finished #mode-switch,body.race-finished #goose-notice,body.race-finished #quick-actions{display:none}
+  #quick-actions{position:fixed;z-index:24;top:calc(max(18px,env(safe-area-inset-top)) + 60px);right:max(clamp(10px,4vw,22px),env(safe-area-inset-right));display:flex;flex-direction:column;gap:8px}
+  #quick-actions button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(243,239,228,.3);
+    background:rgba(15,24,19,.86);color:var(--paper);font-size:19px;line-height:1;cursor:pointer;backdrop-filter:blur(6px)}
+  #quick-actions button[aria-pressed=true]{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  body.race-ready #quick-actions{visibility:hidden}
+  #finish,#podium-modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:rgba(7,18,14,.72);backdrop-filter:blur(6px);overflow:auto}
+  #podium-modal .finish-actions{margin-top:12px}
+  #podium-import-label{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;
+    border:1px solid #a3b19c;border-radius:8px;font:600 15px system-ui;cursor:pointer;color:var(--ink);text-align:center}
+  #podium-import-label input{position:absolute;width:0;height:0;opacity:0}
+  #podium-modal-status{font-size:12.5px;line-height:1.4;color:#576d58;margin:0 0 16px}
   .finish-card{width:min(440px,100%);max-height:100%;overflow:auto;background:var(--paper);color:var(--ink);border-radius:18px;padding:clamp(18px,5vmin,30px);box-shadow:0 12px 50px #0005}
   .finish-card .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#576d58}
   .finish-card h2{font-size:28px;margin:6px 0 12px}
@@ -317,6 +327,10 @@
   <button id="mode-race" type="button" aria-pressed="true">Race</button>
   <button id="mode-visit" type="button" aria-pressed="false">Visit</button>
 </div>
+<div id="quick-actions">
+  <button id="toggle-music" type="button" aria-pressed="false" title="Music: off (click to play)" aria-label="Toggle music">🎵</button>
+  <button id="view-podium" type="button" title="Best times on this circuit" aria-label="Show podium">🏆</button>
+</div>
 <div id="goose-notice" role="status" aria-live="polite" hidden></div>
 <div id="finish" role="dialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-time" hidden>
   <div class="finish-card">
@@ -338,6 +352,26 @@
       <p id="share-status" role="status" aria-live="polite"></p>
     </div>
     <div class="finish-actions"><button id="race-again" type="button">Race again</button><button id="finish-visit" type="button">Explore campus</button></div>
+  </div>
+</div>
+
+<div id="podium-modal" role="dialog" aria-modal="true" aria-labelledby="podium-modal-title" hidden>
+  <div class="finish-card">
+    <div class="eyebrow">Valrose circuit</div>
+    <h2 id="podium-modal-title">Podium · all-time best</h2>
+    <div class="podium" id="podium-modal-slots">
+      <div class="podium-slot empty" id="podium-modal-2"><div class="podium-plate"><span class="podium-name" id="podium-modal-2-name">—</span><span class="podium-time" id="podium-modal-2-time"></span></div><div class="podium-block">2</div></div>
+      <div class="podium-slot empty" id="podium-modal-1"><div class="podium-plate"><span class="podium-name" id="podium-modal-1-name">—</span><span class="podium-time" id="podium-modal-1-time"></span></div><div class="podium-block">1</div></div>
+      <div class="podium-slot empty" id="podium-modal-3"><div class="podium-plate"><span class="podium-name" id="podium-modal-3-name">—</span><span class="podium-time" id="podium-modal-3-time"></span></div><div class="podium-block">3</div></div>
+    </div>
+    <p id="podium-modal-status">Best times are kept on this device. Download a scoreboard file to keep them or view them on another device or browser.</p>
+    <div class="finish-actions">
+      <button id="podium-export" type="button">Download scoreboard</button>
+      <label id="podium-import-label" class="btn" tabindex="0">Load scoreboard
+        <input type="file" id="podium-import" accept=".json">
+      </label>
+    </div>
+    <div class="finish-actions"><button id="podium-close" type="button">Close</button></div>
   </div>
 </div>
 
@@ -369,7 +403,7 @@
 <aside id="discovery" hidden><strong id="place-title"></strong><p id="place-text"></p><label>Destination <select id="place-select"><option value="0">Grand Château</option><option value="1">University Library</option><option value="2">University Restaurant</option><option value="3">Montebello Residence</option><option value="4">Petit Château</option><option value="5">Chemistry · ICN</option><option value="6">Sports Center</option><option value="7">Park Lake</option></select></label><p id="place-distance"></p><p id="discovery-progress"></p><button class="btn" id="next-place">Next place</button><p>Free driving · no speed limiter<br>Arrow keys or WASD · Space for the handbrake</p></aside><div id="panel" class="min">
   <button id="hidepanel" title="Show settings" aria-label="Show settings" aria-expanded="false">+</button>
   <h1>Valrose Campus</h1>
-  <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><button class="btn" id="toggle-music" aria-pressed="false">Music: off</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
+  <div class="body"><div id="focus-hint" style="color:#f1d280">Click the game to drive</div><label>Graphics <select id="graphics"><option value="fast">Fast</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button class="btn" id="fullscreen">Full screen</button><div id="fps" style="font-size:12px;opacity:.7" aria-live="off">Measuring frame rate…</div><label>Mode <select id="play-mode"><option value="race">Race · your circuit</option><option value="visit">Visit · free discovery</option></select></label><button class="btn" id="restore-circuit">Restore your circuit</button>
     <div class="sub" id="datasrc">GPX relief · real OSM campus</div>
     <div class="keys">
       <div><b>↑ ↓ ← →</b>drive</div>

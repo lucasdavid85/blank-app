@@ -29,7 +29,7 @@ function resetKart() {
   } else { kart.x = kart.y = 0; kart.a = 0; }
   if(gate.group){[kart.x,kart.y]=gateSpawn();kart.a=Math.atan2(...gate.forward);resetGate();}
   kart.vx = kart.vy = 0; kart.slip = 0; kart.offroad = false; kart.wet = false; kart.splashTimer = 0;
-  kart.steering=0;kart.wheelSpin=0;kart.railContact=false;cancelCenterBoost();
+  kart.steering=0;kart.wheelSpin=0;kart.railContact=false;kart.wallContact=false;cancelCenterBoost();
   race.boosts=0;race.railHits=0;resetRaceEffects();
   race.s = onLine(kart.x, kart.y).s;
   const course = JSON.stringify(world.line);
@@ -120,8 +120,7 @@ function step(dt) {
   }
   const previous=[kart.x,kart.y];
   kart.x += kart.vx*dt;  kart.y += kart.vy*dt;
-  kart.x = Math.max(-HALF+5, Math.min(HALF-5, kart.x));
-  kart.y = Math.max(-HALF+5, Math.min(HALF-5, kart.y));
+  applyBoundaryWall();
 
   if (!visiting) {
     updateGate(dt,previous);

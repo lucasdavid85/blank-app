@@ -39,15 +39,46 @@ function recordPodiumResult(result) {
 }
 function renderPodium() {
   const top3=podiumEntries.slice(0,3);
-  for(let place=1;place<=3;place++){
-    const slot=el('podium-'+place);
+  for(const prefix of ['podium','podium-modal'])for(let place=1;place<=3;place++){
+    const slot=el(prefix+'-'+place);
     if(!slot)continue;
     const entry=top3[place-1];
     slot.classList.toggle('empty',!entry);
-    el('podium-'+place+'-name').textContent=entry?(entry.name||'Driver'):'—';
-    el('podium-'+place+'-time').textContent=entry?fmt(entry.time):'';
+    el(prefix+'-'+place+'-name').textContent=entry?(entry.name||'Driver'):'—';
+    el(prefix+'-'+place+'-time').textContent=entry?fmt(entry.time):'';
   }
 }
+function openPodium() { renderPodium(); el('podium-modal').hidden=false; }
+function closePodium() { el('podium-modal').hidden=true; }
+el('view-podium').addEventListener('click',openPodium);
+el('podium-close').addEventListener('click',closePodium);
+function podiumFilename() {
+  return 'valrose-podium-'+(race.course?new Date().toISOString().slice(0,10):'circuit')+'.json';
+}
+el('podium-export').addEventListener('click',()=>{
+  download({format:'valrose-kart-podium/1',course:race.course,entries:podiumEntries},podiumFilename());
+  el('podium-modal-status').textContent='Scoreboard file downloaded. Load it on another device or browser to see these times there.';
+});
+el('podium-import').addEventListener('change',ev=>{
+  const f=ev.target.files[0]; if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try {
+      const j=JSON.parse(fr.result);
+      if(!Array.isArray(j.entries))throw Error('Not a Valrose Kart scoreboard file');
+      const loaded=j.entries.filter(e=>e&&typeof e.name==='string'&&isFinite(e.time));
+      const sameCourse=j.course===race.course;
+      podiumEntries=(sameCourse?podiumEntries.concat(loaded):loaded);
+      podiumEntries.sort((a,b)=>a.time-b.time);
+      podiumEntries.length=Math.min(podiumEntries.length,PODIUM_KEEP);
+      savePodium();renderPodium();
+      el('podium-modal-status').textContent=sameCourse
+        ?'Loaded '+loaded.length+' time(s) from the file and merged them with this device’s scores.'
+        :'Loaded '+loaded.length+' time(s) from a file recorded on a different circuit layout.';
+    } catch(e) { el('podium-modal-status').textContent='Could not load that file: '+e.message; }
+  };
+  fr.readAsText(f); ev.target.value='';
+});
 function clearResultPicture() {
   resultImageVersion++;resultCapturePending=false;resultPhoto=null;resultImageBlob=null;
   if(resultImageUrl){URL.revokeObjectURL(resultImageUrl);resultImageUrl=null;}
